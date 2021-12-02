@@ -1,6 +1,9 @@
 import Renderer from './renderer'
 import { pointsVert, pointsFrag } from './shader_programs/basic'
 import RandomPointSphere from './randomPointSphere'
+import NP_Loader from './npy_loader'
+
+import all_z_mean from './assets/all_z_mean.npy'
 
 const R = new Renderer()
 R.init(512, 512)
@@ -22,3 +25,8 @@ function draw(now: number) {
   window.requestAnimationFrame(draw)
 }
 window.requestAnimationFrame(draw)
+
+const n = new NP_Loader()
+n.load(all_z_mean).then((vals) => {
+  console.log(vals)
+})
