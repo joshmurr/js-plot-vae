@@ -47,7 +47,7 @@ module.exports = {
         ],
       },
       {
-        test: /\.npy$/i,
+        test: /\.npy$/,
         use: [
           {
             loader: 'file-loader',

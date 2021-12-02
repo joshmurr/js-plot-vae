@@ -26,6 +26,18 @@ interface BufferDesc {
 //buffers: Array<BufferDesc>
 //}
 
+type Verts =
+  | Array<number>
+  | Uint8Array
+  | Uint8Array
+  | Int8Array
+  | Int16Array
+  | Int32Array
+  | Float32Array
+  | Float64Array
+//| BigUint64Array
+//| BigInt64Array
+
 interface UniformDesc<T> {
   type: string
   location: WebGLUniformLocation
@@ -48,7 +60,7 @@ export default abstract class Geometry {
   _rotation: RotationDesc = { speed: 0, axis: [0, 0, 0] }
   _oscillate = false
 
-  _verts: Array<number> = []
+  _verts: Verts
   _indices: Array<number> = []
   _normals: Array<number> = []
   _colors: Array<number> = []
@@ -59,6 +71,8 @@ export default abstract class Geometry {
 
   _uniforms: { [key: string]: UniformDesc<Float32Array | number | mat4> } = {}
   _textures = {}
+
+  _centroid: [number, number, number]
 
   constructor(gl: WebGL2RenderingContext) {
     this.gl = gl
@@ -198,5 +212,33 @@ export default abstract class Geometry {
   normalize(a: number, b: number, c: number) {
     const len = Math.sqrt(a * a + b * b + c * c)
     return [a / len, b / len, c / len]
+  }
+
+  centreVerts() {
+    if (!this._centroid) this.calcCentroid()
+
+    for (let i = 0; i < this._verts.length; i += 3) {
+      this._verts[i] -= this._centroid[0]
+      this._verts[i + 1] -= this._centroid[1]
+      this._verts[i + 2] -= this._centroid[2]
+    }
+  }
+
+  calcCentroid() {
+    let xs = 0
+    let ys = 0
+    let zs = 0
+
+    for (let i = 0; i < this._verts.length; i += 3) {
+      xs += this._verts[i]
+      ys += this._verts[i + 1]
+      zs += this._verts[i + 2]
+    }
+
+    xs /= this._verts.length / 3
+    ys /= this._verts.length / 3
+    zs /= this._verts.length / 3
+
+    this._centroid = [xs, ys, zs]
   }
 }

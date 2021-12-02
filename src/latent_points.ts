@@ -1,23 +1,29 @@
 import Geometry from './geometry'
 
-export default class RandomPointSphere extends Geometry {
-  _numPoints: number
-  constructor(gl: WebGL2RenderingContext, _numPoints: number) {
-    super(gl)
-    this._numPoints = _numPoints
-    this._verts = []
-    // Generate random vertices on the unit sphere
-    for (let i = 0; i < _numPoints; i++) {
-      const u = Math.random() * Math.PI * 2
-      const v = Math.random() * Math.PI * 2
-      this._verts.push(
-        Math.sin(u) * Math.cos(v),
-        Math.sin(u) * Math.sin(v),
-        Math.cos(u)
-      )
-    }
-  }
+interface DTypeDesc {
+  data:
+    | Uint8Array
+    | Uint8Array
+    | Int8Array
+    | Int16Array
+    | Int32Array
+    | Float32Array
+    | Float64Array
+  //| BigUint64Array
+  //| BigInt64Array
+  dtype: string
+  shape: Array<number>
+}
 
+export default class LatentPoints extends Geometry {
+  _data: DTypeDesc
+  constructor(gl: WebGL2RenderingContext, _data: DTypeDesc) {
+    super(gl)
+    this._data = _data
+    this._verts = Array.from(_data.data)
+
+    this.centreVerts()
+  }
   linkProgram(_program: WebGLProgram) {
     /*
      * Finds all the relevant uniforms and attributes in the specified
@@ -55,7 +61,6 @@ export default class RandomPointSphere extends Geometry {
         ],
       },
     ]
-
     VAO_desc.forEach((VAO) => this.setupVAO(VAO.buffers, VAO.vao))
   }
 }
