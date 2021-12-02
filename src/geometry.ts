@@ -21,15 +21,15 @@ interface BufferDesc {
   attributes: AllAttribDesc
 }
 
-interface VAODesc {
-  vao: WebGLVertexArrayObject
-  buffers: Array<BufferDesc>
-}
+//interface VAODesc {
+//vao: WebGLVertexArrayObject
+//buffers: Array<BufferDesc>
+//}
 
-interface UniformDesc {
-  name: string
+interface UniformDesc<T> {
   type: string
-  value: any
+  location: WebGLUniformLocation
+  value: T
 }
 
 interface RotationDesc {
@@ -39,7 +39,7 @@ interface RotationDesc {
 
 /* GEOMETRY CLASS */
 
-export default class Geometry {
+export default abstract class Geometry {
   gl: WebGL2RenderingContext
 
   _indexedGeometry = false
@@ -57,12 +57,14 @@ export default class Geometry {
 
   _modelMatrix = mat4.create()
 
-  _uniforms: { [key: string]: UniformDesc } = {}
+  _uniforms: { [key: string]: UniformDesc<Float32Array | number | mat4> } = {}
   _textures = {}
 
   constructor(gl: WebGL2RenderingContext) {
     this.gl = gl
   }
+
+  abstract linkProgram(_program: WebGLProgram): void
 
   setupVAO(_buffers: Array<BufferDesc>, _VAO: WebGLVertexArrayObject) {
     this.gl.bindVertexArray(_VAO)
@@ -141,7 +143,7 @@ export default class Geometry {
     this._translate[1] = loc[1]
     this._translate[2] = loc[2]
   }
-  set rotate(speedAxis: number) {
+  set rotate(speedAxis: RotationDesc) {
     this._uniformsNeedsUpdate = true
     const [s, r] = Object.values(speedAxis)
     this._rotation.speed = s
@@ -175,8 +177,8 @@ export default class Geometry {
 
   updateInverseModelMatrix() {
     mat4.invert(
-      this._uniforms['u_InverseModelMatrix'].value,
-      this._uniforms['u_ModelMatrix'].value
+      this._uniforms['u_InverseModelMatrix'].value as mat4,
+      this._uniforms['u_ModelMatrix'].value as mat4
     )
   }
 

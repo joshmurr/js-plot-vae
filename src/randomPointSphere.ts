@@ -18,6 +18,10 @@ export default class RandomPointSphere extends Geometry {
   }
 
   linkProgram(_program: WebGLProgram) {
+    /*
+     * Finds all the relevant uniforms and attributes in the specified
+     * program and links.
+     */
     this._buffers.push(this.gl.createBuffer())
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this._buffers[0])
