@@ -415,6 +415,43 @@ export default class Renderer {
     for (const program in this._programs) {
       const program_desc = this._programs[program]
 
+      /* SET FRAMEBUFFER PARAMETERS */
+      if (program_desc.customFramebufferRoutine) {
+        for (const param in program_desc.framebufferRoutine) {
+          const values = program_desc.framebufferRoutine[param]
+          switch (param) {
+            case 'pre': {
+              // Run the pre-function:
+              this[values.func](...values.args)
+              break
+            }
+            case 'bindFramebuffer': {
+              this.gl[param](this.gl.FRAMEBUFFER, this._framebuffers[values])
+              break
+            }
+            case 'framebufferTexture2D': {
+              const [p, t] = values
+              this.gl[param](
+                this.gl.FRAMEBUFFER,
+                this.gl.COLOR_ATTACHMENT0,
+                this.gl.TEXTURE_2D,
+                this._programs[p].globalUniforms[t].value, // Select the texture
+                0
+              )
+              break
+            }
+            case 'bindTexture': {
+              const [p, t] = values
+              this.gl[param](
+                this.gl.TEXTURE_2D,
+                this._programs[p].globalUniforms[t].value // Select the texture
+              )
+              break
+            }
+          }
+        }
+      }
+
       /* SET DRAW PARAMETERS */
       for (const param in program_desc.drawParams) {
         const k = param as keyof DrawParams
