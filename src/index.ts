@@ -39,19 +39,18 @@ const init = async () => {
   const ret = decoder_model.predict(tf.zeros([1, 3])) as tf.Tensor
   ret.dispose()
 }
+
 init()
+
 const run_model = async (mean: Float32Array, logvar: Float32Array) => {
   const logits = tf.tidy(() => {
-    //const z = tf.tensor([latent])
     const z = reparameterize(mean, logvar).expandDims(0)
-    //const z = tf.randomNormal([1, 3])
     const decoded = decoder_model.predict(z) as tf.Tensor
     return decoded.sigmoid()
   })
   const d = logits.squeeze()
   tf.browser.toPixels(d as tf.Tensor2D, model_canvas)
 }
-
 // --------------------------------------------------------
 
 type UniformDescs = {
@@ -99,7 +98,6 @@ gl.useProgram(program)
 G.setUniforms(uniformSetters, uniforms)
 
 // -- PICKING ---
-
 const pickingTex = G.createTexture(canvas.width, canvas.height)
 
 const depthBuffer = gl.createRenderbuffer()
@@ -123,6 +121,7 @@ canvas.addEventListener('mousemove', (e) => {
   mouseX = e.clientX - rect.left
   mouseY = e.clientY - rect.top
 })
+// --------------
 
 n.load(all_z_mean).then((latent_vals) => {
   latent_vals.data = latent_vals.data.slice(0, 3000)
@@ -130,7 +129,7 @@ n.load(all_z_mean).then((latent_vals) => {
     n.load(all_labels).then((labels) => {
       const latents = new LatentPoints(gl, latent_vals, labels)
       latents.linkProgram(program)
-      latents.oscillate = true
+      latents.oscillate = false
       latents.rotate = { speed: 0.01, axis: [1, 1, 0] }
 
       function draw(time: number) {
@@ -152,14 +151,13 @@ n.load(all_z_mean).then((latent_vals) => {
         gl.enable(gl.CULL_FACE)
         gl.enable(gl.DEPTH_TEST)
 
-        const modelMat = latents.updateModelMatrix(time)
-        G.setUniforms(uniformSetters, { u_ModelMatrix: modelMat, u_useUid: 1 })
+        //const modelMat = latents.updateModelMatrix(time)
+        G.setUniforms(uniformSetters, { u_useUid: 1 })
 
         gl.drawArrays(gl.POINTS, 0, latents.numVertices)
-        //---
+        //----------------------
 
-        // Mouse pixel
-
+        // Mouse pixel ---------
         const pixelX = (mouseX * gl.canvas.width) / gl.canvas.clientWidth
         const pixelY =
           gl.canvas.height -
@@ -169,8 +167,8 @@ n.load(all_z_mean).then((latent_vals) => {
         gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data)
         let id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
         if (id > 0) {
-          const latent = latent_vals.data.slice(0, 0 + 3)
-          const log_var = log_vals.data.slice(0, 0 + 3)
+          const latent = latent_vals.data.slice(id, id + 3)
+          const log_var = log_vals.data.slice(id, id + 3)
           const x = latent[0] < 0 ? latent[0].toFixed(4) : latent[0].toFixed(5)
           const y = latent[1] < 0 ? latent[1].toFixed(4) : latent[1].toFixed(5)
           const z = latent[2] < 0 ? latent[2].toFixed(4) : latent[2].toFixed(5)
@@ -178,7 +176,7 @@ n.load(all_z_mean).then((latent_vals) => {
 
           run_model(<Float32Array>latent, <Float32Array>log_var)
         }
-        //---
+        //----------------------
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null)
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
