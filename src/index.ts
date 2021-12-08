@@ -6,6 +6,7 @@ import GL_Handler from './gl_handler'
 import { latentVert, latentFrag } from './shader_programs/basic'
 import LatentPoints from './latent_points'
 import NP_Loader from './npy_loader'
+import Arcball from './arcball'
 
 import all_z_mean from './assets/all_z_mean_2.npy'
 import all_log_var from './assets/all_log_var_2.npy'
@@ -81,8 +82,10 @@ const projMatrix = mat4.perspective(
   zFar
 )
 
+const modelMat = mat4.create()
+
 const uniforms: UniformDescs = {
-  u_ModelMatrix: mat4.create(),
+  u_ModelMatrix: modelMat,
   u_ViewMatrix: viewMatrix,
   u_ProjectionMatrix: projMatrix,
   u_pointSize: 0.6,
@@ -96,6 +99,8 @@ const uniformSetters = G.getUniformSetters(program)
 gl.useProgram(program)
 
 G.setUniforms(uniformSetters, uniforms)
+
+const arcball = new Arcball(canvas.width, canvas.height)
 
 // -- PICKING ---
 const pickingTex = G.createTexture(canvas.width, canvas.height)
@@ -114,12 +119,27 @@ gl.framebufferRenderbuffer(
 
 let mouseX = -1
 let mouseY = -1
+let mousedown = false
 
 const output_span = document.getElementById('latent_id')
 canvas.addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect()
   mouseX = e.clientX - rect.left
   mouseY = e.clientY - rect.top
+
+  if (mousedown) {
+    arcball.updateRotation(mouseX, mouseY)
+    arcball.applyRotationMatrix(modelMat)
+  }
+})
+
+canvas.addEventListener('mousedown', () => {
+  mousedown = true
+  arcball.startRotation(mouseX, mouseY)
+})
+
+canvas.addEventListener('mouseup', () => {
+  mousedown = false
 })
 // --------------
 
@@ -152,7 +172,7 @@ n.load(all_z_mean).then((latent_vals) => {
         gl.enable(gl.DEPTH_TEST)
 
         //const modelMat = latents.updateModelMatrix(time)
-        G.setUniforms(uniformSetters, { u_useUid: 1 })
+        G.setUniforms(uniformSetters, { u_ModelMatrix: modelMat, u_useUid: 1 })
 
         gl.drawArrays(gl.POINTS, 0, latents.numVertices)
         //----------------------
@@ -174,7 +194,7 @@ n.load(all_z_mean).then((latent_vals) => {
           const z = latent[2] < 0 ? latent[2].toFixed(4) : latent[2].toFixed(5)
           output_span.innerText = `ID: ${id}\t\tx: ${x},\ty: ${y},\tz: ${z}`
 
-          run_model(<Float32Array>latent, <Float32Array>log_var)
+          //run_model(<Float32Array>latent, <Float32Array>log_var)
         }
         //----------------------
 
