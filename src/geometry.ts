@@ -13,6 +13,7 @@ interface AttribDesc {
 interface AllAttribDesc {
   i_Position?: AttribDesc
   i_Color?: AttribDesc
+  i_Uid?: AttribDesc
 }
 
 interface BufferDesc {
@@ -83,21 +84,19 @@ export default abstract class Geometry {
   setupVAO(_buffers: Array<BufferDesc>, _VAO: WebGLVertexArrayObject) {
     this.gl.bindVertexArray(_VAO)
 
-    //for (const buffer of _buffers) {
     _buffers.map((buffer) => {
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer.buffer_object)
       let offset = 0
 
       let attrib: keyof AllAttribDesc
       for (attrib in buffer.attributes) {
-        //buffer.attributes.forEach((attrib_dec) => {
         const attrib_desc = buffer.attributes[attrib]
         this.gl.enableVertexAttribArray(attrib_desc.location)
         this.gl.vertexAttribPointer(
           attrib_desc.location,
           attrib_desc.num_components,
           attrib_desc.type,
-          false, //attrib_desc.normalize,
+          false, //normalize
           buffer.stride,
           offset
         )

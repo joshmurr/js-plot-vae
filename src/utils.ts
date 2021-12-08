@@ -9,6 +9,17 @@ export function generateColourPalette(num_colours: number): Array<number[]> {
   return colours
 }
 
+export function generateColourUids(num: number, components = 4): Array<number> {
+  const colours: Array<number> = []
+  for (let i = 0; i < num; i++) {
+    const id = i + 1
+    for (let j = 0; j < components; j++) {
+      colours.push(((id >> (j * 8)) & 0xff) / 0xff)
+    }
+  }
+  return colours
+}
+
 export function HSVtoRGB(h: number, s: number, v: number): Array<number> {
   let r: number
   let g: number

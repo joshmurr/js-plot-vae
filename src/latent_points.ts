@@ -1,5 +1,5 @@
 import Geometry from './geometry'
-import { generateColourPalette } from './utils'
+import { generateColourPalette, generateColourUids } from './utils'
 
 interface DTypeDesc {
   data:
@@ -17,9 +17,12 @@ interface DTypeDesc {
 }
 
 export default class LatentPoints extends Geometry {
-  _data: DTypeDesc
-  _labels: DTypeDesc
-  _unique_labels: Set<number>
+  private _num_color_components: number
+  private _num_uid_components: number
+  private _uids: Array<number>
+  private _data: DTypeDesc
+  private _labels: DTypeDesc
+  private _unique_labels: Set<number>
   constructor(
     gl: WebGL2RenderingContext,
     _data: DTypeDesc,
@@ -31,11 +34,19 @@ export default class LatentPoints extends Geometry {
     this._labels = _labels
     this._unique_labels = new Set(_labels.data)
 
+    /* Generate Point colour from label */
+    this._num_color_components = 3
     const pallette = generateColourPalette(this._unique_labels.size)
-
     for (let i = 0; i < this._labels.data.length; i++) {
       this._colors.push(...pallette[this._labels.data[i]])
     }
+
+    /* Generate UID colour */
+    this._num_uid_components = 3
+    this._uids = generateColourUids(
+      this._verts.length,
+      this._num_uid_components
+    )
 
     this.centreVerts()
   }
@@ -44,7 +55,11 @@ export default class LatentPoints extends Geometry {
      * Finds all the relevant uniforms and attributes in the specified
      * program and links.
      */
-    this._buffers.push(this.gl.createBuffer(), this.gl.createBuffer())
+    this._buffers.push(
+      this.gl.createBuffer(),
+      this.gl.createBuffer(),
+      this.gl.createBuffer()
+    )
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this._buffers[0])
     this.gl.bufferData(
@@ -56,6 +71,12 @@ export default class LatentPoints extends Geometry {
     this.gl.bufferData(
       this.gl.ARRAY_BUFFER,
       new Float32Array(this._colors),
+      this.gl.STATIC_DRAW
+    )
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this._buffers[2])
+    this.gl.bufferData(
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(this._uids),
       this.gl.STATIC_DRAW
     )
 
@@ -73,7 +94,16 @@ export default class LatentPoints extends Geometry {
     const colorAttrib = {
       i_Color: {
         location: this.gl.getAttribLocation(_program, 'i_Color'),
-        num_components: 3,
+        num_components: this._num_color_components,
+        type: this.gl.FLOAT,
+        size: 4,
+      },
+    }
+
+    const uidAttrib = {
+      i_Uid: {
+        location: this.gl.getAttribLocation(_program, 'i_Uid'),
+        num_components: this._num_uid_components,
         type: this.gl.FLOAT,
         size: 4,
       },
@@ -94,9 +124,18 @@ export default class LatentPoints extends Geometry {
             stride: 0,
             attributes: colorAttrib,
           },
+          {
+            buffer_object: this._buffers[2],
+            stride: 0,
+            attributes: uidAttrib,
+          },
         ],
       },
     ]
     VAO_desc.forEach((VAO) => this.setupVAO(VAO.buffers, VAO.vao))
+  }
+
+  get uids() {
+    return this._uids
   }
 }

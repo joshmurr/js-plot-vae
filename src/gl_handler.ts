@@ -119,6 +119,86 @@ export default class GL_Handler {
     }
   }
 
+  public createTexture(
+    w: number,
+    h: number,
+    data: Uint8Array | Float32Array = null
+  ): WebGLTexture {
+    const texture = this._gl.createTexture()
+    this._gl.bindTexture(this._gl.TEXTURE_2D, texture)
+    this._gl.texImage2D(
+      this._gl.TEXTURE_2D,
+      0,
+      this._gl.RGBA,
+      w,
+      h,
+      0,
+      this._gl.RGBA,
+      this._gl.UNSIGNED_BYTE,
+      data
+    )
+    //this._gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+    //this._gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+    this._gl.texParameteri(
+      this._gl.TEXTURE_2D,
+      this._gl.TEXTURE_MIN_FILTER,
+      this._gl.LINEAR
+    )
+    this._gl.texParameteri(
+      this._gl.TEXTURE_2D,
+      this._gl.TEXTURE_WRAP_S,
+      this._gl.CLAMP_TO_EDGE
+    )
+    this._gl.texParameteri(
+      this._gl.TEXTURE_2D,
+      this._gl.TEXTURE_WRAP_T,
+      this._gl.CLAMP_TO_EDGE
+    )
+
+    return texture
+  }
+
+  public createFramebuffer(tex: WebGLTexture): WebGLFramebuffer {
+    const fb = this._gl.createFramebuffer()
+    this._gl.bindFramebuffer(this._gl.FRAMEBUFFER, fb)
+    this._gl.framebufferTexture2D(
+      this._gl.FRAMEBUFFER,
+      this._gl.COLOR_ATTACHMENT0,
+      this._gl.TEXTURE_2D,
+      tex,
+      0
+    )
+    return fb
+  }
+
+  public setFramebufferAttachmentSizes(
+    width: number,
+    height: number,
+    targetTex: WebGLTexture,
+    depthBuffer: WebGLRenderbuffer
+  ) {
+    this._gl.bindTexture(this._gl.TEXTURE_2D, targetTex)
+    this._gl.texImage2D(
+      this._gl.TEXTURE_2D,
+      0,
+      this._gl.RGBA,
+      width,
+      height,
+      0,
+      this._gl.RGBA,
+      this._gl.UNSIGNED_BYTE,
+      null
+    )
+
+    this._gl.bindRenderbuffer(this._gl.RENDERBUFFER, depthBuffer)
+    this._gl.renderbufferStorage(
+      this._gl.RENDERBUFFER,
+      this._gl.DEPTH_COMPONENT16,
+      width,
+      height
+    )
+  }
+
   public get gl(): WebGL2RenderingContext {
     return this._gl
   }
