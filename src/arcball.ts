@@ -4,7 +4,7 @@ export default class Arcball {
   private _radius: number
   private _startMatrix: mat4
   private _FOV = 30
-  private _translation_factor = 1e-32
+  private _translation_factor = 0.1
   private _width: number
   private _height: number
   private _isRotating = false
@@ -26,7 +26,7 @@ export default class Arcball {
 
   public startRotation(_x: number, _y: number) {
     const x = _x - this._width / 2
-    const y = this._height / 2 - _y
+    const y = _y - this._height / 2
 
     this._startRotationVector = this.convertXY(x, y)
     vec3.normalize(this._startRotationVector, this._startRotationVector)
@@ -37,7 +37,7 @@ export default class Arcball {
 
   public updateRotation(_x: number, _y: number) {
     const x = _x - this._width / 2
-    const y = this._height / 2 - _y
+    const y = _y - this._height / 2
 
     this._currentRotationVector = this.convertXY(x, y)
     vec3.normalize(this._currentRotationVector, this._currentRotationVector)
@@ -61,11 +61,11 @@ export default class Arcball {
           this._startRotationVector
         )
         val = val > 1 - 1e-10 ? 1.0 : val
-        const rotationAngle = (Math.acos(val) * 180) / Math.PI
+        const rotationAngle = Math.acos(val) * Math.PI
 
-        this.applyTranslationMatrix(_matrix, true)
-        mat4.fromRotation(_matrix, rotationAngle * 0.01, rotationAxis)
-        this.applyTranslationMatrix(_matrix, false)
+        //this.applyTranslationMatrix(_matrix, true)
+        mat4.fromRotation(_matrix, rotationAngle, rotationAxis)
+        //this.applyTranslationMatrix(_matrix, false)
       }
     }
     //mat4.multiply(this._startMatrix, this._startMatrix, rotationMatrix)
