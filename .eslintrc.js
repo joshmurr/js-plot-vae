@@ -3,7 +3,7 @@ module.exports = {
   plugins: ['@typescript-eslint'],
   extends: [
     'eslint:recommended',
-    'plugin:@typescript-eslint/recommended', // Uses the recommended rules from @typescript-eslint/eslint-plugin
+    'plugin:@typescript-eslint/recommended',
     'prettier',
   ],
   parserOptions: {
@@ -24,6 +24,7 @@ module.exports = {
         allowTemplateLiterals: true,
       },
     ],
+    '@typescript-eslint/no-explicit-any': 'off',
   },
   settings: {
     react: {

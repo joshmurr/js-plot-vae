@@ -26,6 +26,16 @@ type GeomUniforms = {
   [key: string]: UniformDesc<mat4>
 }
 
+interface FramebufferRoutine {
+  bindFramebuffer: string
+  framebufferTexture2D: Array<string>
+  bindTexture: Array<string>
+}
+
+type FramebufferRoutines = {
+  [key: string]: FramebufferRoutine
+}
+
 interface ProgramDesc {
   shader: WebGLProgram
   mode: string
@@ -35,6 +45,8 @@ interface ProgramDesc {
   geometryUniforms: GeomUniforms
   uniformBuffers: { [key: string]: WebGLBuffer }
   drawParams: DrawParams
+  customFramebufferRoutine: boolean
+  framebufferRoutine: FramebufferRoutines
 }
 
 export default class Renderer {
@@ -117,6 +129,8 @@ export default class Renderer {
         viewport: [0, 0, this.gl.canvas.width, this.gl.canvas.height],
         enable: ['CULL_FACE', 'DEPTH_TEST'],
       },
+      customFramebufferRoutine: false,
+      framebufferRoutine: {},
     }
   }
 
@@ -391,10 +405,7 @@ export default class Renderer {
         }
         default: {
           // eslint-disable-next-line
-          ;(this.gl as any)[uniform_desc.type](
-            uniform_desc.location,
-            uniform_desc.value
-          )
+          this.gl[uniform_desc.type](uniform_desc.location, uniform_desc.value)
         }
       }
     }
@@ -416,13 +427,14 @@ export default class Renderer {
       const program_desc = this._programs[program]
 
       /* SET FRAMEBUFFER PARAMETERS */
+      /*
       if (program_desc.customFramebufferRoutine) {
         for (const param in program_desc.framebufferRoutine) {
           const values = program_desc.framebufferRoutine[param]
           switch (param) {
             case 'pre': {
               // Run the pre-function:
-              this[values.func](...values.args)
+              //this[values.func](...values.args)
               break
             }
             case 'bindFramebuffer': {
@@ -451,6 +463,7 @@ export default class Renderer {
           }
         }
       }
+      */
 
       /* SET DRAW PARAMETERS */
       for (const param in program_desc.drawParams) {
