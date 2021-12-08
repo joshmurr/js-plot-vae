@@ -62,7 +62,7 @@ export default class GL_Handler {
     return shaderProgram
   }
 
-  private loadShader(type: number, source: string): WebGLProgram {
+  private loadShader(type: number, source: string): WebGLShader {
     const shader = this._gl.createShader(type)
     this._gl.shaderSource(shader, source)
     this._gl.compileShader(shader)

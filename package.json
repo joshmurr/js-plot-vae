@@ -30,6 +30,7 @@
     "webpack-dev-server": "^4.6.0"
   },
   "dependencies": {
+    "@tensorflow/tfjs": "^3.11.0",
     "gl-matrix": "^3.4.3",
     "npyjs": "^0.2.1"
   }
