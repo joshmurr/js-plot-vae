@@ -61,11 +61,11 @@ type UniformDescs = {
 const n = new NP_Loader()
 
 const G = new GL_Handler()
-const canvas = G.canvas(512, 512)
+const canvas = G.canvas(512, 512, true)
 const gl = G.gl
 const program = G.shaderProgram(latentVert, latentFrag)
 
-const cameraPos = vec3.fromValues(-0.1, 0.1, 0)
+const cameraPos = vec3.fromValues(0, 0, 0.2)
 const up = vec3.fromValues(0, 1, 0)
 const target = vec3.fromValues(0, 0, 0)
 const viewMatrix = mat4.lookAt(mat4.create(), cameraPos, target, up)
@@ -144,7 +144,7 @@ canvas.addEventListener('mouseup', () => {
 // --------------
 
 n.load(all_z_mean).then((latent_vals) => {
-  latent_vals.data = latent_vals.data.slice(0, 3000)
+  latent_vals.data = latent_vals.data.slice(0, 30000)
   n.load(all_log_var).then((log_vals) => {
     n.load(all_labels).then((labels) => {
       const latents = new LatentPoints(gl, latent_vals, labels)
@@ -152,7 +152,7 @@ n.load(all_z_mean).then((latent_vals) => {
       latents.oscillate = false
       latents.rotate = { speed: 0.01, axis: [1, 1, 0] }
 
-      function draw(time: number) {
+      function draw() {
         G.setFramebufferAttachmentSizes(
           canvas.width,
           canvas.height,
@@ -194,7 +194,7 @@ n.load(all_z_mean).then((latent_vals) => {
           const z = latent[2] < 0 ? latent[2].toFixed(4) : latent[2].toFixed(5)
           output_span.innerText = `ID: ${id}\t\tx: ${x},\ty: ${y},\tz: ${z}`
 
-          //run_model(<Float32Array>latent, <Float32Array>log_var)
+          run_model(<Float32Array>latent, <Float32Array>log_var)
         }
         //----------------------
 
@@ -212,7 +212,7 @@ n.load(all_z_mean).then((latent_vals) => {
         id = -1
         requestAnimationFrame(draw)
       }
-      draw(0)
+      draw()
     })
   })
 })
