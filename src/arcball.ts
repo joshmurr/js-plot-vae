@@ -25,8 +25,7 @@ export default class Arcball {
   }
 
   public startRotation(_x: number, _y: number) {
-    const x = _x - this._width / 2
-    const y = _y - this._height / 2
+    const { x, y } = this.remapXY(_x, _y)
 
     this._startRotationVector = this.convertXY(x, y)
     vec3.normalize(this._startRotationVector, this._startRotationVector)
@@ -36,11 +35,18 @@ export default class Arcball {
   }
 
   public updateRotation(_x: number, _y: number) {
-    const x = _x - this._width / 2
-    const y = _y - this._height / 2
+    const { x, y } = this.remapXY(_x, _y)
 
     this._currentRotationVector = this.convertXY(x, y)
     vec3.normalize(this._currentRotationVector, this._currentRotationVector)
+  }
+  private remapXY(_x: number, _y: number) {
+    // Unintuitive inversion works better
+    // for some reason
+    const x = -2 * (_x / this._width) - 1
+    const y = 2 * (_y / this._height) + 1
+
+    return { x, y }
   }
 
   public applyRotationMatrix(_matrix: mat4) {
@@ -64,7 +70,7 @@ export default class Arcball {
         const rotationAngle = Math.acos(val) * Math.PI
 
         //this.applyTranslationMatrix(_matrix, true)
-        mat4.fromRotation(_matrix, rotationAngle, rotationAxis)
+        mat4.fromRotation(_matrix, rotationAngle * 100, rotationAxis)
         //this.applyTranslationMatrix(_matrix, false)
       }
     }
