@@ -199,6 +199,22 @@ export default class GL_Handler {
     )
   }
 
+  public defaultViewMat(_camPos: [number, number, number] = [0, 0, 1]): mat4 {
+    const cameraPos = vec3.fromValues(..._camPos)
+    const up = vec3.fromValues(0, 1, 0)
+    const target = vec3.fromValues(0, 0, 0)
+    return mat4.lookAt(mat4.create(), cameraPos, target, up)
+  }
+
+  public defaultProjMat(): mat4 {
+    const fieldOfView = (45 * Math.PI) / 180
+    const aspect = this.aspect
+    const zNear = 0.1
+    const zFar = 100.0
+
+    return mat4.perspective(mat4.create(), fieldOfView, aspect, zNear, zFar)
+  }
+
   public get gl(): WebGL2RenderingContext {
     return this._gl
   }
