@@ -3,6 +3,7 @@ import { vec3, mat4 } from 'gl-matrix'
 export default class Arcball {
   private _radius: number
   private _startMatrix: mat4
+  private _currentMatrix: mat4
   private _FOV = 30
   private _translation_factor = 0.1
   private _width: number
@@ -22,6 +23,7 @@ export default class Arcball {
     this._height = height
     this._radius = Math.floor(Math.min(width, height) / 2)
     this._startMatrix = mat4.create()
+    this._currentMatrix = mat4.create()
   }
 
   public startRotation(_x: number, _y: number) {
@@ -69,13 +71,14 @@ export default class Arcball {
         val = val > 1 - 1e-10 ? 1.0 : val
         const rotationAngle = Math.acos(val) * Math.PI
 
-        //this.applyTranslationMatrix(_matrix, true)
-        mat4.fromRotation(_matrix, rotationAngle * 100, rotationAxis)
-        //this.applyTranslationMatrix(_matrix, false)
+        mat4.fromRotation(
+          this._currentMatrix,
+          rotationAngle * 100,
+          rotationAxis
+        )
       }
     }
-    //mat4.multiply(this._startMatrix, this._startMatrix, rotationMatrix)
-    this._startMatrix = mat4.clone(_matrix)
+    mat4.multiply(_matrix, this._startMatrix, this._currentMatrix)
   }
 
   private applyTranslationMatrix(_matrix: mat4, reverse: boolean) {
@@ -90,8 +93,11 @@ export default class Arcball {
     mat4.translate(_matrix, _matrix, trans)
   }
 
-  private stopRotation() {
+  public stopRotation(_matrix: mat4) {
     this._isRotating = false
+    mat4.multiply(this._startMatrix, this._currentMatrix, this._startMatrix)
+    mat4.identity(this._currentMatrix)
+    _matrix = mat4.clone(this._startMatrix)
   }
 
   private convertXY(x: number, y: number): vec3 {

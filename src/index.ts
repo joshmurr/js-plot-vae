@@ -28,9 +28,10 @@ ctx.fillRect(0, 0, model_canvas.width, model_canvas.height)
 const reparameterize = (mean: Float32Array, logvar: Float32Array) => {
   const m = tf.tensor(mean)
   const l = tf.tensor(logvar)
-  const eps = tf.randomNormal(m.shape)
+  //const eps = tf.randomNormal(m.shape)
   const exp = tf.exp(l.mul(0.5))
-  const res = eps.mul(exp).add(m)
+  //const res = eps.mul(exp).add(m)
+  const res = exp.add(m)
 
   return res
 }
@@ -65,23 +66,8 @@ const canvas = G.canvas(512, 512, true)
 const gl = G.gl
 const program = G.shaderProgram(latentVert, latentFrag)
 
-const cameraPos = vec3.fromValues(0, 0, 0.2)
-const up = vec3.fromValues(0, 1, 0)
-const target = vec3.fromValues(0, 0, 0)
-const viewMatrix = mat4.lookAt(mat4.create(), cameraPos, target, up)
-const fieldOfView = (45 * Math.PI) / 180
-const aspect = G.aspect
-const zNear = 0.1
-const zFar = 100.0
-
-const projMatrix = mat4.perspective(
-  mat4.create(),
-  fieldOfView,
-  aspect,
-  zNear,
-  zFar
-)
-
+const viewMatrix = G.defaultViewMat([0, 0, 0.2])
+const projMatrix = G.defaultProjMat()
 const modelMat = mat4.create()
 
 const uniforms: UniformDescs = {
@@ -140,6 +126,7 @@ canvas.addEventListener('mousedown', () => {
 
 canvas.addEventListener('mouseup', () => {
   mousedown = false
+  arcball.stopRotation(modelMat)
 })
 // --------------
 
@@ -173,6 +160,7 @@ n.load(all_z_mean).then((latent_vals) => {
 
         //const modelMat = latents.updateModelMatrix(time)
         G.setUniforms(uniformSetters, { u_ModelMatrix: modelMat, u_useUid: 1 })
+        //G.setUniforms(uniformSetters, { u_ViewMatrix: viewMatrix, u_useUid: 1 })
 
         gl.drawArrays(gl.POINTS, 0, latents.numVertices)
         //----------------------
@@ -194,7 +182,7 @@ n.load(all_z_mean).then((latent_vals) => {
           const z = latent[2] < 0 ? latent[2].toFixed(4) : latent[2].toFixed(5)
           output_span.innerText = `ID: ${id}\t\tx: ${x},\ty: ${y},\tz: ${z}`
 
-          run_model(<Float32Array>latent, <Float32Array>log_var)
+          //run_model(<Float32Array>latent, <Float32Array>log_var)
         }
         //----------------------
 
