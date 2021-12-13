@@ -135,18 +135,54 @@ canvas.addEventListener('wheel', (e) => {
   viewMatrix = G.viewMat({ pos: vec3.fromValues(...camPos) })
 })
 
-// --------------
+const slice = 20000
+//const select = 9
 
-n.load(all_z_mean).then((latent_vals) => {
-  //latent_vals.data = latent_vals.data.slice(0, 1000 * 3)
-  n.load(all_log_var).then((log_vals) => {
-    n.load(all_labels).then((labels) => {
+// --------------
+n.load(all_labels).then((labels) => {
+  labels.data = labels.data.slice(0, slice * 3)
+  //const label_ids: number[] = []
+  //labels.data.forEach((l, i) => {
+  //if (l == select) label_ids.push(i)
+  //})
+
+  //labels.data = new Uint8Array(label_ids.length).fill(0)
+
+  n.load(all_z_mean).then((latent_vals) => {
+    latent_vals.data = latent_vals.data.slice(0, slice * 3)
+
+    //const selected: Array<number> = []
+    //label_ids.forEach((i) => {
+    //selected.push(latent_vals.data[i * 3])
+    //selected.push(latent_vals.data[i * 3 + 1])
+    //selected.push(latent_vals.data[i * 3 + 2])
+    //})
+
+    //latent_vals.data = new Float32Array(selected)
+
+    n.load(all_log_var).then((log_vals) => {
+      log_vals.data = log_vals.data.slice(0, slice * 3)
+      //const selected_logs: Array<number> = []
+      //label_ids.forEach((i) => {
+      //selected_logs.push(log_vals.data[i * 3])
+      //selected_logs.push(log_vals.data[i * 3 + 1])
+      //selected_logs.push(log_vals.data[i * 3 + 2])
+      //})
+
+      //log_vals.data = new Float32Array(selected_logs)
+
       const latents = new LatentPoints(gl, latent_vals, labels)
       latents.normalizeVerts()
       //latents.centreVerts()
       latents.linkProgram(program)
-      latents.oscillate = false
-      latents.rotate = { speed: 0.01, axis: [1, 1, 0] }
+
+      latents.pallette.map((rgba, i) => {
+        const li = document.createElement('li')
+        li.innerText = String(i)
+        const [r, g, b] = rgba
+        li.style.background = `rgb(${r * 255},${g * 255},${b * 255})`
+        document.getElementById('pallette').appendChild(li)
+      })
 
       function draw() {
         G.setFramebufferAttachmentSizes(
@@ -166,7 +202,7 @@ n.load(all_z_mean).then((latent_vals) => {
           u_ModelMatrix: modelMat,
           u_ViewMatrix: viewMatrix,
           u_useUid: 1,
-          u_PointSize: 7 - (Math.log(camPos[2]) + 1),
+          u_PointSize: 8 - (Math.log(camPos[2]) + 1),
         })
 
         gl.drawArrays(gl.POINTS, 0, latents.numVertices)
@@ -182,8 +218,8 @@ n.load(all_z_mean).then((latent_vals) => {
         gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data)
         let id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
         if (id > 0) {
-          const latent = latent_vals.data.slice(id - 1, id + 2)
-          const log_var = log_vals.data.slice(id - 1, id + 2)
+          const latent = latent_vals.data.slice(id * 3 - 1, id * 3 + 2)
+          const log_var = log_vals.data.slice(id * 3 - 1, id * 3 + 2)
           const x = latent[0] < 0 ? latent[0].toFixed(4) : latent[0].toFixed(5)
           const y = latent[1] < 0 ? latent[1].toFixed(4) : latent[1].toFixed(5)
           const z = latent[2] < 0 ? latent[2].toFixed(4) : latent[2].toFixed(5)

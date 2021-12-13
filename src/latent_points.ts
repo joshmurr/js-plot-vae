@@ -10,8 +10,6 @@ interface DTypeDesc {
     | Int32Array
     | Float32Array
     | Float64Array
-  //| BigUint64Array
-  //| BigInt64Array
   dtype: string
   shape: Array<number>
 }
@@ -23,6 +21,8 @@ export default class LatentPoints extends Geometry {
   private _data: DTypeDesc
   private _labels: DTypeDesc
   private _unique_labels: Set<number>
+  private _pallette: Array<number[]>
+
   constructor(
     gl: WebGL2RenderingContext,
     _data: DTypeDesc,
@@ -36,9 +36,9 @@ export default class LatentPoints extends Geometry {
 
     /* Generate Point colour from label */
     this._num_color_components = 3
-    const pallette = generateColourPalette(this._unique_labels.size)
+    this._pallette = generateColourPalette(this._unique_labels.size)
     for (let i = 0; i < this._labels.data.length; i++) {
-      this._colors.push(...pallette[this._labels.data[i]])
+      this._colors.push(...this._pallette[this._labels.data[i]])
     }
 
     /* Generate UID colour */
@@ -133,7 +133,11 @@ export default class LatentPoints extends Geometry {
     VAO_desc.forEach((VAO) => this.setupVAO(VAO.buffers, VAO.vao))
   }
 
-  get uids() {
+  public get uids() {
     return this._uids
+  }
+
+  public get pallette() {
+    return this._pallette
   }
 }
