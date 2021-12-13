@@ -47,8 +47,6 @@ export default class LatentPoints extends Geometry {
       this._verts.length,
       this._num_uid_components
     )
-
-    this.centreVerts()
   }
   linkProgram(_program: WebGLProgram) {
     /*

@@ -8,8 +8,8 @@ import LatentPoints from './latent_points'
 import NP_Loader from './npy_loader'
 import Arcball from './arcball_quat'
 
-import all_z_mean from './assets/all_z_mean_2.npy'
-import all_log_var from './assets/all_log_var_2.npy'
+import all_z_mean from './assets/all_z_mean_3.npy'
+import all_log_var from './assets/all_log_var_3.npy'
 import all_labels from './assets/all_train_labels.npy'
 
 // TFJS ---------------------------------------------------
@@ -28,12 +28,12 @@ ctx.fillRect(0, 0, model_canvas.width, model_canvas.height)
 const reparameterize = (mean: Float32Array, logvar: Float32Array) => {
   const m = tf.tensor(mean)
   const l = tf.tensor(logvar)
-  //const eps = tf.randomNormal(m.shape)
   const exp = tf.exp(l.mul(0.5))
+  const eps = tf.randomNormal(m.shape).mul(exp).add(m)
   //const res = eps.mul(exp).add(m)
-  const res = exp.add(m)
+  //const res = exp.add(m)
 
-  return res
+  return eps
 }
 
 const init = async () => {
@@ -66,7 +66,8 @@ const canvas = G.canvas(512, 512, true)
 const gl = G.gl
 const program = G.shaderProgram(latentVert, latentFrag)
 
-const viewMatrix = G.defaultViewMat([0, 0, 0.2])
+const camPos: [number, number, number] = [0, 0, 2]
+let viewMatrix = G.viewMat({ pos: vec3.fromValues(...camPos) })
 const projMatrix = G.defaultProjMat()
 const modelMat = mat4.create()
 
@@ -74,7 +75,6 @@ const uniforms: UniformDescs = {
   u_ModelMatrix: modelMat,
   u_ViewMatrix: viewMatrix,
   u_ProjectionMatrix: projMatrix,
-  u_pointSize: 0.6,
   u_useUid: 0,
   u_IdSelected: -1,
   u_PointSize: 8.0,
@@ -128,13 +128,22 @@ canvas.addEventListener('mouseup', () => {
   mousedown = false
   arcball.stopRotation()
 })
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault()
+  camPos[2] = camPos[2] - e.deltaY * -0.001
+  viewMatrix = G.viewMat({ pos: vec3.fromValues(...camPos) })
+})
+
 // --------------
 
 n.load(all_z_mean).then((latent_vals) => {
-  latent_vals.data = latent_vals.data.slice(0, 30000)
+  //latent_vals.data = latent_vals.data.slice(0, 1000 * 3)
   n.load(all_log_var).then((log_vals) => {
     n.load(all_labels).then((labels) => {
       const latents = new LatentPoints(gl, latent_vals, labels)
+      latents.normalizeVerts()
+      //latents.centreVerts()
       latents.linkProgram(program)
       latents.oscillate = false
       latents.rotate = { speed: 0.01, axis: [1, 1, 0] }
@@ -153,9 +162,12 @@ n.load(all_z_mean).then((latent_vals) => {
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
         gl.viewport(0, 0, canvas.width, canvas.height)
 
-        //const modelMat = latents.updateModelMatrix(time)
-        G.setUniforms(uniformSetters, { u_ModelMatrix: modelMat, u_useUid: 1 })
-        //G.setUniforms(uniformSetters, { u_ViewMatrix: viewMatrix, u_useUid: 1 })
+        G.setUniforms(uniformSetters, {
+          u_ModelMatrix: modelMat,
+          u_ViewMatrix: viewMatrix,
+          u_useUid: 1,
+          u_PointSize: 7 - (Math.log(camPos[2]) + 1),
+        })
 
         gl.drawArrays(gl.POINTS, 0, latents.numVertices)
         //----------------------
@@ -170,14 +182,14 @@ n.load(all_z_mean).then((latent_vals) => {
         gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data)
         let id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
         if (id > 0) {
-          const latent = latent_vals.data.slice(id, id + 3)
-          const log_var = log_vals.data.slice(id, id + 3)
+          const latent = latent_vals.data.slice(id - 1, id + 2)
+          const log_var = log_vals.data.slice(id - 1, id + 2)
           const x = latent[0] < 0 ? latent[0].toFixed(4) : latent[0].toFixed(5)
           const y = latent[1] < 0 ? latent[1].toFixed(4) : latent[1].toFixed(5)
           const z = latent[2] < 0 ? latent[2].toFixed(4) : latent[2].toFixed(5)
           output_span.innerText = `ID: ${id}\t\tx: ${x},\ty: ${y},\tz: ${z}`
 
-          //run_model(<Float32Array>latent, <Float32Array>log_var)
+          run_model(<Float32Array>latent, <Float32Array>log_var)
         }
         //----------------------
 
@@ -190,7 +202,7 @@ n.load(all_z_mean).then((latent_vals) => {
         gl.enable(gl.CULL_FACE)
         gl.enable(gl.DEPTH_TEST)
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-        gl.clearColor(1, 1, 0.5, 3)
+        gl.clearColor(0.9, 0.9, 0.9, 1)
 
         gl.drawArrays(gl.POINTS, 0, latents.numVertices)
 

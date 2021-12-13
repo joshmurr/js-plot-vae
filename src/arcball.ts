@@ -96,11 +96,11 @@ export default class Arcball {
     mat4.translate(_matrix, _matrix, trans)
   }
 
-  public stopRotation(_matrix: mat4) {
+  public stopRotation() {
     this._isRotating = false
     mat4.multiply(this._startMatrix, this._currentMatrix, this._startMatrix)
     mat4.identity(this._currentMatrix)
-    _matrix = mat4.clone(this._startMatrix)
+    //_matrix = mat4.clone(this._startMatrix)
   }
 
   private convertXY(x: number, y: number): vec3 {

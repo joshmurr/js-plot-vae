@@ -48,7 +48,6 @@ void main(){
 
     if(u_IdSelected == gl_VertexID) {
         gl_PointSize = (gl_Position.z * -1.0) + u_PointSize * 4.0;
-        //v_Color = vec3(0.0);
     } else{
         gl_PointSize = (gl_Position.z * -1.0) + u_PointSize;
     }
@@ -59,13 +58,13 @@ precision mediump float;
 
 in vec3 v_Color;
 in vec3 v_Uid;
-uniform float u_pointSize;
+uniform float u_PointSize;
 uniform bool u_useUid;
 out vec4 OUTCOLOUR;
 
 void main(){
     float distance = length(2.0 * gl_PointCoord - 1.0);
-    if (distance > u_pointSize) {
+    if (distance > u_PointSize * 0.1) {
         discard;
     }
 
