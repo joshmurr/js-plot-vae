@@ -33,7 +33,7 @@ export default class GL_Handler {
     const canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
-    document.body.appendChild(canvas)
+    document.body.prepend(canvas)
     this._gl = canvas.getContext('webgl2', {
       premultipliedAlpha: _premultAlpha,
     })
