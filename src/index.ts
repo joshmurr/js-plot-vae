@@ -6,7 +6,7 @@ import GL_Handler from './gl_handler'
 import { latentVert, latentFrag } from './shader_programs/basic'
 import LatentPoints from './latent_points'
 import NP_Loader from './npy_loader'
-import Arcball from './arcball'
+import Arcball from './arcball_quat'
 
 import all_z_mean from './assets/all_z_mean_2.npy'
 import all_log_var from './assets/all_log_var_2.npy'
@@ -126,7 +126,7 @@ canvas.addEventListener('mousedown', () => {
 
 canvas.addEventListener('mouseup', () => {
   mousedown = false
-  arcball.stopRotation(modelMat)
+  arcball.stopRotation()
 })
 // --------------
 
@@ -152,11 +152,6 @@ n.load(all_z_mean).then((latent_vals) => {
         // Draw for picking ---
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
         gl.viewport(0, 0, canvas.width, canvas.height)
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-        gl.clearColor(1, 1, 1, 1)
-        gl.clearDepth(1.0)
-        gl.enable(gl.CULL_FACE)
-        gl.enable(gl.DEPTH_TEST)
 
         //const modelMat = latents.updateModelMatrix(time)
         G.setUniforms(uniformSetters, { u_ModelMatrix: modelMat, u_useUid: 1 })
@@ -190,6 +185,12 @@ n.load(all_z_mean).then((latent_vals) => {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
 
         G.setUniforms(uniformSetters, { u_useUid: 0, u_IdSelected: id - 1 })
+
+        gl.clearDepth(1.0)
+        gl.enable(gl.CULL_FACE)
+        gl.enable(gl.DEPTH_TEST)
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+        gl.clearColor(1, 1, 0.5, 3)
 
         gl.drawArrays(gl.POINTS, 0, latents.numVertices)
 

@@ -1,4 +1,4 @@
-import { vec3, mat4 } from 'gl-matrix'
+import { vec3, mat4, quat } from 'gl-matrix'
 
 export default class Arcball {
   private _radius: number
@@ -17,6 +17,9 @@ export default class Arcball {
   private _startTransY = 0
   private _currentTransX = 0
   private _currentTransY = 0
+
+  private _startQuat: quat
+  private _currentQuat: quat
 
   constructor(width: number, height: number) {
     this._width = width
