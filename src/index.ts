@@ -8,12 +8,12 @@ import LatentPoints from './latent_points'
 import NP_Loader from './npy_loader'
 import Arcball from './arcball_quat'
 
-import all_z_mean from './assets/all_z_mean_4.npy'
-import all_log_var from './assets/all_log_var_4.npy'
-import all_labels from './assets/all_train_labels.npy'
+import all_z_mean from './assets/all_z_mean_fashion.npy'
+import all_log_var from './assets/all_log_var_fashion.npy'
+import all_labels from './assets/all_train_labels_fashion.npy'
 
 // TFJS ---------------------------------------------------
-const DECODER_PATH = './assets/vae_decoder2/model.json'
+const DECODER_PATH = './assets/vae_decoder_fashion/model.json'
 
 const model_canvas = <HTMLCanvasElement>document.getElementById('model_output')
 const ctx = model_canvas.getContext('2d')
@@ -135,123 +135,130 @@ canvas.addEventListener('wheel', (e) => {
   viewMatrix = G.viewMat({ pos: vec3.fromValues(...camPos) })
 })
 
-const slice = 30000
+//const slice = 30000
 //const select = 9
 
 // --------------
-n.load(all_labels).then((labels) => {
-  labels.data = labels.data.slice(0, slice * 3)
-  //const label_ids: number[] = []
-  //labels.data.forEach((l, i) => {
-  //if (l == select) label_ids.push(i)
-  //})
+const labels = n.load(all_labels)
+const latent_vals = n.load(all_z_mean)
+const log_vals = n.load(all_log_var)
 
-  //labels.data = new Uint8Array(label_ids.length).fill(0)
+Promise.all([labels, latent_vals, log_vals]).then(
+  ([labels, latent_vals, log_vals]) => {
+    const latents = new LatentPoints(gl, latent_vals, labels)
+    latents.normalizeVerts()
+    //latents.centreVerts()
+    latents.linkProgram(program)
 
-  n.load(all_z_mean).then((latent_vals) => {
-    latent_vals.data = latent_vals.data.slice(0, slice * 3)
-    console.log(latent_vals.data)
+    latents.pallette.map((rgba, i) => {
+      const li = document.createElement('li')
+      li.innerText = String(i)
+      const [r, g, b] = rgba
+      li.style.background = `rgb(${r * 255},${g * 255},${b * 255})`
+      document.getElementById('pallette').appendChild(li)
+    })
 
-    //const selected: Array<number> = []
-    //label_ids.forEach((i) => {
-    //selected.push(latent_vals.data[i * 3])
-    //selected.push(latent_vals.data[i * 3 + 1])
-    //selected.push(latent_vals.data[i * 3 + 2])
-    //})
+    function draw() {
+      G.setFramebufferAttachmentSizes(
+        canvas.width,
+        canvas.height,
+        pickingTex,
+        depthBuffer
+      )
 
-    //latent_vals.data = new Float32Array(selected)
+      gl.bindVertexArray(latents.VAO)
 
-    n.load(all_log_var).then((log_vals) => {
-      log_vals.data = log_vals.data.slice(0, slice * 3)
-      //const selected_logs: Array<number> = []
-      //label_ids.forEach((i) => {
-      //selected_logs.push(log_vals.data[i * 3])
-      //selected_logs.push(log_vals.data[i * 3 + 1])
-      //selected_logs.push(log_vals.data[i * 3 + 2])
-      //})
+      // Draw for picking ---
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
+      gl.viewport(0, 0, canvas.width, canvas.height)
 
-      //log_vals.data = new Float32Array(selected_logs)
-
-      const latents = new LatentPoints(gl, latent_vals, labels)
-      latents.normalizeVerts()
-      //latents.centreVerts()
-      latents.linkProgram(program)
-
-      latents.pallette.map((rgba, i) => {
-        const li = document.createElement('li')
-        li.innerText = String(i)
-        const [r, g, b] = rgba
-        li.style.background = `rgb(${r * 255},${g * 255},${b * 255})`
-        document.getElementById('pallette').appendChild(li)
+      G.setUniforms(uniformSetters, {
+        u_ModelMatrix: modelMat,
+        u_ViewMatrix: viewMatrix,
+        u_useUid: 1,
+        u_PointSize: 8 - (Math.log(camPos[2]) + 1),
       })
 
-      function draw() {
-        G.setFramebufferAttachmentSizes(
-          canvas.width,
-          canvas.height,
-          pickingTex,
-          depthBuffer
-        )
+      gl.drawArrays(gl.POINTS, 0, latents.numVertices)
+      //----------------------
 
-        gl.bindVertexArray(latents.VAO)
+      // Mouse pixel ---------
+      const pixelX = (mouseX * gl.canvas.width) / gl.canvas.clientWidth
+      const pixelY =
+        gl.canvas.height -
+        (mouseY * gl.canvas.height) / gl.canvas.clientHeight -
+        1
+      const data = new Uint8Array(4)
+      gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data)
+      let id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
+      if (id > 0) {
+        const idx = id - 1
+        const z_mean = latent_vals.data.slice(idx * 3, idx * 3 + 3)
+        const log_var = log_vals.data.slice(idx * 3, idx * 3 + 3)
+        const x = z_mean[0] < 0 ? z_mean[0].toFixed(4) : z_mean[0].toFixed(5)
+        const y = z_mean[1] < 0 ? z_mean[1].toFixed(4) : z_mean[1].toFixed(5)
+        const z = z_mean[2] < 0 ? z_mean[2].toFixed(4) : z_mean[2].toFixed(5)
+        output_span.innerText = `ID: ${id}\t\tx: ${x},\ty: ${y},\tz: ${z}`
 
-        // Draw for picking ---
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
-        gl.viewport(0, 0, canvas.width, canvas.height)
-
-        G.setUniforms(uniformSetters, {
-          u_ModelMatrix: modelMat,
-          u_ViewMatrix: viewMatrix,
-          u_useUid: 1,
-          u_PointSize: 8 - (Math.log(camPos[2]) + 1),
-        })
-
-        gl.drawArrays(gl.POINTS, 0, latents.numVertices)
-        //----------------------
-
-        // Mouse pixel ---------
-        const pixelX = (mouseX * gl.canvas.width) / gl.canvas.clientWidth
-        const pixelY =
-          gl.canvas.height -
-          (mouseY * gl.canvas.height) / gl.canvas.clientHeight -
-          1
-        const data = new Uint8Array(4)
-        gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data)
-        let id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
-        if (id > 0) {
-          const idx = id - 1
-          const z_mean = latent_vals.data.slice(idx * 3, idx * 3 + 3)
-          const log_var = log_vals.data.slice(idx * 3, idx * 3 + 3)
-          const x = z_mean[0] < 0 ? z_mean[0].toFixed(4) : z_mean[0].toFixed(5)
-          const y = z_mean[1] < 0 ? z_mean[1].toFixed(4) : z_mean[1].toFixed(5)
-          const z = z_mean[2] < 0 ? z_mean[2].toFixed(4) : z_mean[2].toFixed(5)
-          output_span.innerText = `ID: ${id}\t\tx: ${x},\ty: ${y},\tz: ${z}`
-
-          run_model(<Float32Array>z_mean, <Float32Array>log_var)
-        }
-        //----------------------
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-
-        G.setUniforms(uniformSetters, { u_useUid: 0, u_IdSelected: id - 1 })
-
-        gl.clearDepth(1.0)
-        gl.enable(gl.CULL_FACE)
-        gl.enable(gl.DEPTH_TEST)
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-        gl.clearColor(0.9, 0.9, 0.9, 1)
-
-        gl.drawArrays(gl.POINTS, 0, latents.numVertices)
-
-        gl.bindVertexArray(null)
-        gl.bindBuffer(gl.ARRAY_BUFFER, null)
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
-
-        id = -1
-        requestAnimationFrame(draw)
+        run_model(<Float32Array>z_mean, <Float32Array>log_var)
       }
-      draw()
-    })
-  })
+      //----------------------
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+      gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+
+      G.setUniforms(uniformSetters, { u_useUid: 0, u_IdSelected: id - 1 })
+
+      gl.clearDepth(1.0)
+      gl.enable(gl.CULL_FACE)
+      gl.enable(gl.DEPTH_TEST)
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+      gl.clearColor(0.9, 0.9, 0.9, 1)
+
+      gl.drawArrays(gl.POINTS, 0, latents.numVertices)
+
+      gl.bindVertexArray(null)
+      gl.bindBuffer(gl.ARRAY_BUFFER, null)
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
+
+      id = -1
+      requestAnimationFrame(draw)
+    }
+    draw()
+  }
+)
+
+/* Select particular class code
+ * ----------------------------
+n.load(all_labels).then((labels) => {
+labels.data = labels.data.slice(0, slice * 3)
+const label_ids: number[] = []
+labels.data.forEach((l, i) => {
+if (l == select) label_ids.push(i)
 })
+
+labels.data = new Uint8Array(label_ids.length).fill(0)
+
+n.load(all_z_mean).then((latent_vals) => {
+latent_vals.data = latent_vals.data.slice(0, slice * 3)
+
+const selected: Array<number> = []
+label_ids.forEach((i) => {
+selected.push(latent_vals.data[i * 3])
+selected.push(latent_vals.data[i * 3 + 1])
+selected.push(latent_vals.data[i * 3 + 2])
+})
+
+latent_vals.data = new Float32Array(selected)
+
+n.load(all_log_var).then((log_vals) => {
+log_vals.data = log_vals.data.slice(0, slice * 3)
+const selected_logs: Array<number> = []
+label_ids.forEach((i) => {
+selected_logs.push(log_vals.data[i * 3])
+selected_logs.push(log_vals.data[i * 3 + 1])
+selected_logs.push(log_vals.data[i * 3 + 2])
+})
+
+log_vals.data = new Float32Array(selected_logs)
+*/
