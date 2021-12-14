@@ -8,12 +8,12 @@ import LatentPoints from './latent_points'
 import NP_Loader from './npy_loader'
 import Arcball from './arcball_quat'
 
-import all_z_mean from './assets/all_z_mean_3.npy'
-import all_log_var from './assets/all_log_var_3.npy'
+import all_z_mean from './assets/all_z_mean_4.npy'
+import all_log_var from './assets/all_log_var_4.npy'
 import all_labels from './assets/all_train_labels.npy'
 
 // TFJS ---------------------------------------------------
-const DECODER_PATH = './assets/vae_decoder/model.json'
+const DECODER_PATH = './assets/vae_decoder2/model.json'
 
 const model_canvas = <HTMLCanvasElement>document.getElementById('model_output')
 const ctx = model_canvas.getContext('2d')
@@ -28,12 +28,12 @@ ctx.fillRect(0, 0, model_canvas.width, model_canvas.height)
 const reparameterize = (mean: Float32Array, logvar: Float32Array) => {
   const m = tf.tensor(mean)
   const l = tf.tensor(logvar)
-  const exp = tf.exp(l.mul(0.5))
-  const eps = tf.randomNormal(m.shape).mul(exp).add(m)
+  const exp = tf.exp(l.mul(0.5)).add(m)
+  //const eps = tf.randomNormal(m.shape) // .mul(exp).add(m)
   //const res = eps.mul(exp).add(m)
   //const res = exp.add(m)
 
-  return eps
+  return exp
 }
 
 const init = async () => {
@@ -135,7 +135,7 @@ canvas.addEventListener('wheel', (e) => {
   viewMatrix = G.viewMat({ pos: vec3.fromValues(...camPos) })
 })
 
-const slice = 20000
+const slice = 30000
 //const select = 9
 
 // --------------
@@ -150,6 +150,7 @@ n.load(all_labels).then((labels) => {
 
   n.load(all_z_mean).then((latent_vals) => {
     latent_vals.data = latent_vals.data.slice(0, slice * 3)
+    console.log(latent_vals.data)
 
     //const selected: Array<number> = []
     //label_ids.forEach((i) => {
@@ -218,14 +219,15 @@ n.load(all_labels).then((labels) => {
         gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data)
         let id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
         if (id > 0) {
-          const latent = latent_vals.data.slice(id * 3 - 1, id * 3 + 2)
-          const log_var = log_vals.data.slice(id * 3 - 1, id * 3 + 2)
-          const x = latent[0] < 0 ? latent[0].toFixed(4) : latent[0].toFixed(5)
-          const y = latent[1] < 0 ? latent[1].toFixed(4) : latent[1].toFixed(5)
-          const z = latent[2] < 0 ? latent[2].toFixed(4) : latent[2].toFixed(5)
+          const idx = id - 1
+          const z_mean = latent_vals.data.slice(idx * 3, idx * 3 + 3)
+          const log_var = log_vals.data.slice(idx * 3, idx * 3 + 3)
+          const x = z_mean[0] < 0 ? z_mean[0].toFixed(4) : z_mean[0].toFixed(5)
+          const y = z_mean[1] < 0 ? z_mean[1].toFixed(4) : z_mean[1].toFixed(5)
+          const z = z_mean[2] < 0 ? z_mean[2].toFixed(4) : z_mean[2].toFixed(5)
           output_span.innerText = `ID: ${id}\t\tx: ${x},\ty: ${y},\tz: ${z}`
 
-          run_model(<Float32Array>latent, <Float32Array>log_var)
+          run_model(<Float32Array>z_mean, <Float32Array>log_var)
         }
         //----------------------
 
