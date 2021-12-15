@@ -192,9 +192,9 @@ Promise.all([labels, latent_vals, log_vals]).then(
       gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data)
       let id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
       if (id > 0) {
-        const idx = id - 1
-        const z_mean = latent_vals.data.slice(idx * 3, idx * 3 + 3)
-        const log_var = log_vals.data.slice(idx * 3, idx * 3 + 3)
+        const idx = (id - 1) * 3
+        const z_mean = latent_vals.data.slice(idx, idx + 3)
+        const log_var = log_vals.data.slice(idx, idx + 3)
         const x = z_mean[0] < 0 ? z_mean[0].toFixed(4) : z_mean[0].toFixed(5)
         const y = z_mean[1] < 0 ? z_mean[1].toFixed(4) : z_mean[1].toFixed(5)
         const z = z_mean[2] < 0 ? z_mean[2].toFixed(4) : z_mean[2].toFixed(5)
