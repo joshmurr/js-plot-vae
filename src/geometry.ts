@@ -20,16 +20,6 @@ interface BufferDesc {
   attributes: AllAttribDesc
 }
 
-type Verts =
-  | Array<number>
-  | Uint8Array
-  | Uint8Array
-  | Int8Array
-  | Int16Array
-  | Int32Array
-  | Float32Array
-  | Float64Array
-
 interface UniformDesc<T> {
   type: string
   location: WebGLUniformLocation
@@ -50,10 +40,10 @@ export default abstract class Geometry {
   _rotation: RotationDesc = { speed: 0, axis: [0, 0, 0] }
   _oscillate = false
 
-  _verts: Verts
-  _indices: Array<number> = []
-  _normals: Array<number> = []
-  _colors: Array<number> = []
+  _verts: number[]
+  _indices: number[]
+  _normals: number[]
+  _colors: number[]
   _buffers: Array<WebGLBuffer> = []
   _VAOs: Array<WebGLVertexArrayObject> = []
 
@@ -117,6 +107,10 @@ export default abstract class Geometry {
 
   public get numVertices() {
     return this._verts.length / 3
+  }
+
+  public get verts() {
+    return this._verts
   }
 
   public get numIndices() {

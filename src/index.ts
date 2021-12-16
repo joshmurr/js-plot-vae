@@ -148,14 +148,19 @@ function main(model_name: string) {
   ].map((data) => n.load(data))
 
   Promise.all(data_promises).then(([labels, mean_vals, log_vals]) => {
-    const curve = new Curve(gl, [
-      [-2, -2, -2],
-      [0, 2, -1],
-      [-3, 1, -0.5],
-      [0.5, -3, 1],
-      [2, 2, 2],
-    ])
+    //const curve = new Curve(gl, [
+    //[-2, -2, -2],
+    //[0, 2, -1],
+    //[-3, 1, -0.5],
+    //[0.5, -3, 1],
+    //[2, 2, 2],
+    //])
+    const curve = new Curve(gl, 'circle')
     curve.linkProgram(curve_program)
+
+    document
+      .getElementsByTagName('button')[0]
+      .addEventListener('click', () => model.latentTraversal(curve.verts))
 
     const geom = new LatentPoints(gl, mean_vals, labels)
     geom.normalizeVerts()
@@ -204,7 +209,7 @@ function main(model_name: string) {
         1
       const data = new Uint8Array(4)
       gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data)
-      const id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
+      let id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
       if (id > 0) {
         const idx = (id - 1) * 3
         const mean = mean_vals.data.slice(idx, idx + 3) as Float32Array
