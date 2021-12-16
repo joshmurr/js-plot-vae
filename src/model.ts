@@ -58,11 +58,15 @@ export default class Model {
   private reparameterize_with_noise(mean: Float32Array, logvar: Float32Array) {
     const m = tf.tensor(mean)
     const l = tf.tensor(logvar)
-    const exp = tf.exp(l.mul(0.5)).add(m)
-    //const eps = tf.randomNormal(m.shape) // .mul(exp).add(m)
-    //const res = eps.mul(exp).add(m)
-    //const res = exp.add(m)
+    const exp = tf.exp(l.mul(0.5))
+    const eps = tf.randomNormal(m.shape)
+    const ret = eps.mul(exp).add(m)
 
     return exp
+  }
+
+  public dispose() {
+    this.model.dispose()
+    tf.disposeVariables()
   }
 }

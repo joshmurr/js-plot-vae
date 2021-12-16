@@ -1,4 +1,16 @@
-export default {
+type AllConfigs = { [key: string]: Config }
+
+interface Config {
+  path: string
+  mean: string
+  log_var: string
+  labels: string
+  width: number
+  height: number
+  input_shape: number[]
+}
+
+export const config: AllConfigs = {
   mnist: {
     path: './assets/vae_decoder2/model.json',
     mean: './assets/model_data/mnist/mean.npy',
