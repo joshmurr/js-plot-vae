@@ -150,7 +150,11 @@ function main(model_name: string) {
 
   Promise.all(data_promises).then(([labels, mean_vals, log_vals]) => {
     // CURVE ------------------
-    const curve = new Curve(gl)
+    const curve = new Curve(gl, [
+      [-2, -2, -2],
+      [0, 2, 0],
+      [2, 2, 2],
+    ])
     curve.linkProgram(curve_program)
     // ------------------------
 

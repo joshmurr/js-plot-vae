@@ -17,7 +17,7 @@ precision mediump float;
 out vec4 OUTCOLOUR;
 
 void main(){
-    OUTCOLOUR = vec4(vec3(0.8), 1.0);
+    OUTCOLOUR = vec4(vec3(0.5), 1.0);
 }`
 
 export const latentVert = `#version 300 es
