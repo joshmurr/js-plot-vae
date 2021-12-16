@@ -45,6 +45,8 @@ export default class Model {
     })
     const d = logits.squeeze()
     tf.browser.toPixels(d as tf.Tensor2D, this.canvas)
+
+    return d
   }
 
   private reparameterize(mean: Float32Array, logvar: Float32Array) {
@@ -68,5 +70,30 @@ export default class Model {
   public dispose() {
     this.model.dispose()
     tf.disposeVariables()
+  }
+
+  private async generateImageTensors(points: number[]) {
+    const output_tensors: Array<tf.Tensor2D> = []
+    for (let i = 0; i < points.length; i += 3) {
+      const mean = new Float32Array(points.slice(i, i + 3))
+      //const log_var = await tf.randomNormal([3]).data()
+      const log_var = new Float32Array([0, 0, 0])
+      const output = await this.run(mean, log_var as Float32Array)
+
+      output_tensors.push(output as tf.Tensor2D)
+    }
+    return output_tensors
+  }
+
+  public async latentTraversal(points: number[]) {
+    const image_tensors = await this.generateImageTensors(points)
+
+    image_tensors.forEach((t: tf.Tensor2D) => {
+      const canvas = document.createElement('canvas')
+      canvas.width = this.config.width
+      canvas.height = this.config.height
+      tf.browser.toPixels(t, canvas)
+      document.body.appendChild(canvas)
+    })
   }
 }

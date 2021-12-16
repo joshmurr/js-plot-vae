@@ -37,6 +37,7 @@ export default class LatentPoints extends Geometry {
     /* Generate Point colour from label */
     this._num_color_components = 3
     this._pallette = generateColourPalette(this._unique_labels.size)
+    this._colors = []
     for (let i = 0; i < this._labels.data.length; i++) {
       this._colors.push(...this._pallette[this._labels.data[i]])
     }

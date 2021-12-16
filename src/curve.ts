@@ -1,13 +1,20 @@
 import Geometry from './geometry'
 
 export default class Curve extends Geometry {
-  constructor(
-    gl: WebGL2RenderingContext,
-    _points: Array<number[]> | null = null
-  ) {
+  constructor(gl: WebGL2RenderingContext, _points: Array<number[]> | string) {
     super(gl)
-    this._verts = this.computeNVertexCurve3D(_points)
-    this.normalizeVerts()
+    if (typeof _points === 'string') {
+      switch (_points) {
+        case 'circle':
+          this._verts = this.generateCircleVerts(64)
+          break
+        default:
+          this._verts = [-1, -1, -1, 1, 1, 1]
+      }
+    } else {
+      this._verts = this.computeNVertexCurve3D(_points)
+      this.normalizeVerts()
+    }
     this._indices = this.calcIndices()
     this._indexedGeometry = true
   }
@@ -83,5 +90,18 @@ export default class Curve extends Geometry {
     }
 
     return curveVerts
+  }
+
+  private generateCircleVerts(n_segs: number) {
+    const verts = []
+    for (let i = 0; i < n_segs; i++) {
+      const theta = ((Math.PI * 2) / n_segs) * i
+      const x = Math.cos(theta) * 0.5
+      const y = Math.sin(theta) * 0.5
+      const z = 0
+
+      verts.push(x, y, z)
+    }
+    return verts
   }
 }
