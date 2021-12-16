@@ -11,8 +11,6 @@ interface DType {
     | Int32ArrayConstructor
     | Float32ArrayConstructor
     | Float64ArrayConstructor
-  //| BigUint64ArrayConstructor
-  //| BigInt64ArrayConstructor
 }
 
 interface DTypes {
@@ -51,16 +49,6 @@ export default class NP_Loader {
       size: 32,
       arrayConstructor: Int32Array,
     },
-    //'<u8': {
-    //name: 'uint64',
-    //size: 64,
-    //arrayConstructor: BigUint64Array,
-    //},
-    //'<i8': {
-    //name: 'int64',
-    //size: 64,
-    //arrayConstructor: BigInt64Array,
-    //},
     '<f4': {
       name: 'float32',
       size: 32,

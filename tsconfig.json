@@ -6,11 +6,12 @@
     "noImplicitAny": true,
     "allowSyntheticDefaultImports": true,
     "sourceMap": true,
-    "module": "es6",
+    "module": "esnext",
     "target": "es5",
     "jsx": "react",
     "allowJs": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
   },
-  "exclude": ["spec"],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "unused", "spec"],
 }

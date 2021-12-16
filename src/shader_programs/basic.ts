@@ -59,7 +59,7 @@ precision mediump float;
 in vec3 v_Color;
 in vec3 v_Uid;
 uniform float u_PointSize;
-uniform bool u_useUid;
+uniform bool u_UseUid;
 out vec4 OUTCOLOUR;
 
 void main(){
@@ -68,5 +68,5 @@ void main(){
         discard;
     }
 
-    OUTCOLOUR = u_useUid ? vec4(v_Uid, 0.0) : vec4(v_Color, 1.0);
+    OUTCOLOUR = u_UseUid ? vec4(v_Uid, 0.0) : vec4(v_Color, 1.0);
 }`
