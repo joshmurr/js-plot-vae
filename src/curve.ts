@@ -66,7 +66,7 @@ export default class Curve extends Geometry {
   private computeNVertexCurve3D(points: Array<number[]>) {
     const curveVerts = []
 
-    for (let t = 0; t <= 1; t += 0.1) {
+    for (let t = 0; t <= 1; t += 0.01) {
       let curveX = 0
       let curveY = 0
       let curveZ = 0

@@ -1,3 +1,3 @@
 # Interacting with the Latent Space of a VAE
 
-![Output](./output_151221.png)
+![Output](./output_161221.png)
