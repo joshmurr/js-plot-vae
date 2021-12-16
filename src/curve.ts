@@ -96,8 +96,8 @@ export default class Curve extends Geometry {
     const verts = []
     for (let i = 0; i < n_segs; i++) {
       const theta = ((Math.PI * 2) / n_segs) * i
-      const x = Math.cos(theta) * 0.5
-      const y = Math.sin(theta) * 0.5
+      const x = Math.cos(theta) * 0.7
+      const y = Math.sin(theta) * 0.7
       const z = 0
 
       verts.push(x, y, z)

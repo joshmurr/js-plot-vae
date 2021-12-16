@@ -2,11 +2,11 @@ import * as tf from '@tensorflow/tfjs'
 
 interface Config {
   path: string
-  mean: string
-  log_var: string
-  labels: string
-  width: number
-  height: number
+  mean?: string
+  log_var?: string
+  labels?: string
+  width?: number
+  height?: number
   input_shape: number[]
 }
 
