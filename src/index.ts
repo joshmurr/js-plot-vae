@@ -141,7 +141,6 @@ function main(model_name: string) {
   model = new Model(config[model_name], model_canvas)
   // --------------------------------------------------------
 
-  // --------------
   const data_promises = [
     config[model_name].labels,
     config[model_name].mean,
@@ -149,7 +148,6 @@ function main(model_name: string) {
   ].map((data) => n.load(data))
 
   Promise.all(data_promises).then(([labels, mean_vals, log_vals]) => {
-    // CURVE ------------------
     const curve = new Curve(gl, [
       [-2, -2, -2],
       [0, 2, -1],
@@ -158,7 +156,6 @@ function main(model_name: string) {
       [2, 2, 2],
     ])
     curve.linkProgram(curve_program)
-    // ------------------------
 
     const geom = new LatentPoints(gl, mean_vals, labels)
     geom.normalizeVerts()
@@ -242,7 +239,7 @@ function main(model_name: string) {
       gl.bindBuffer(gl.ARRAY_BUFFER, null)
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
 
-      //id = -1
+      id = -1
       requestAnimationFrame(draw)
     }
     draw()
