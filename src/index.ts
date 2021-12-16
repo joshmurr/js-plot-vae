@@ -11,7 +11,7 @@ import LatentPoints from './latent_points'
 import Curve from './curve'
 import NP_Loader from './npy_loader'
 import Arcball from './arcball_quat'
-import Model from './model'
+import VAE from './vae'
 import { config } from './config'
 
 type UniformDescs = {
@@ -130,15 +130,15 @@ const populateOutput = (id: number, mean: Float32Array, log: Float32Array) => {
   output_log.innerText = `Log Var\t\t${arrayToXYZ(log)}`
 }
 
-let model: Model
+let vae: VAE
 
 function main(model_name: string) {
   // - MODEL ------------------------------------------------
   const model_canvas = <HTMLCanvasElement>(
     document.getElementById('model_output')
   )
-  if (model) model.dispose()
-  model = new Model(config[model_name], model_canvas)
+  if (vae) vae.dispose()
+  vae = new VAE(config[model_name], model_canvas)
   // --------------------------------------------------------
 
   const data_promises = [
@@ -160,7 +160,7 @@ function main(model_name: string) {
 
     document
       .getElementsByTagName('button')[0]
-      .addEventListener('click', () => model.latentTraversal(curve.verts))
+      .addEventListener('click', () => vae.latentTraversal(curve.verts))
 
     const geom = new LatentPoints(gl, mean_vals, labels)
     geom.normalizeVerts()
@@ -216,7 +216,7 @@ function main(model_name: string) {
         const log_var = log_vals.data.slice(idx, idx + 3) as Float32Array
         populateOutput(id, mean, log_var)
 
-        model.run(mean, log_var)
+        vae.run(mean, log_var)
       }
       //----------------------
 
