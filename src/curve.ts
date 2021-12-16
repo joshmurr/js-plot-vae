@@ -1,40 +1,14 @@
 import Geometry from './geometry'
 
 export default class Curve extends Geometry {
-  constructor(gl: WebGL2RenderingContext) {
+  constructor(
+    gl: WebGL2RenderingContext,
+    _points: Array<number[]> | null = null
+  ) {
     super(gl)
-    this._verts = [
-      -1.0,
-      1.0,
-      1.0, // 0
-      1.0,
-      1.0,
-      1.0, // 1
-      1.0,
-      -1.0,
-      1.0, // 2
-      -1.0,
-      -1.0,
-      1.0, // 3
-      -1.0,
-      -1.0,
-      -1.0, // 4
-      -1.0,
-      1.0,
-      -1.0, // 5
-      1.0,
-      1.0,
-      -1.0, // 6
-      1.0,
-      -1.0,
-      -1.0, // 7
-    ]
+    this._verts = this.computeNVertexCurve3D(_points)
     this.normalizeVerts()
-    // gl.LINES
-    this._indices = [
-      0, 1, 1, 2, 2, 3, 3, 0, 0, 5, 1, 6, 2, 7, 3, 4, 5, 6, 6, 7, 7, 4, 4, 5,
-    ]
-
+    this._indices = this.calcIndices()
     this._indexedGeometry = true
   }
 
@@ -77,5 +51,37 @@ export default class Curve extends Geometry {
       },
     ]
     VAO_desc.forEach((VAO) => this.setupVAO(VAO.buffers, VAO.vao))
+  }
+
+  private computeBinomial(n: number, k: number) {
+    let value = 1
+    for (let i = 1; i <= k; i++) {
+      value = (value * (n + 1 - i)) / i
+    }
+    if (n == k) value = 1
+
+    return value
+  }
+
+  private computeNVertexCurve3D(points: Array<number[]>) {
+    const curveVerts = []
+
+    for (let t = 0; t <= 1; t += 0.1) {
+      let curveX = 0
+      let curveY = 0
+      let curveZ = 0
+
+      for (let i = 0, n = points.length - 1; i <= n; i++) {
+        const binomial =
+          this.computeBinomial(n, i) * Math.pow(1 - t, n - i) * Math.pow(t, i)
+        curveX += binomial * points[i][0]
+        curveY += binomial * points[i][1]
+        curveZ += binomial * points[i][2]
+      }
+
+      curveVerts.push(curveX, curveY, curveZ)
+    }
+
+    return curveVerts
   }
 }

@@ -251,4 +251,14 @@ export default abstract class Geometry {
 
     this._centroid = [xs, ys, zs]
   }
+
+  protected calcIndices(): number[] {
+    const indices = []
+    for (let i = 0; i < this._verts.length; i += 3) {
+      const idx = i / 3
+      if (idx > 1) indices.push(idx - 1)
+      indices.push(idx)
+    }
+    return indices
+  }
 }
