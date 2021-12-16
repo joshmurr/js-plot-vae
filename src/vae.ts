@@ -1,13 +1,14 @@
 import * as tf from '@tensorflow/tfjs'
 import Model from './model'
+import NN from './neural_net'
 
 interface Config {
   path: string
-  mean: string
-  log_var: string
-  labels: string
-  width: number
-  height: number
+  mean?: string
+  log_var?: string
+  labels?: string
+  width?: number
+  height?: number
   input_shape: number[]
 }
 
@@ -61,21 +62,26 @@ export default class VAE extends Model {
     tf.disposeVariables()
   }
 
-  private async generateImageTensors(points: number[]) {
+  private async generateImageTensors(points: number[], mean_to_log: NN) {
     const output_tensors: Array<tf.Tensor2D> = []
     for (let i = 0; i < points.length; i += 3) {
-      const mean = new Float32Array(points.slice(i, i + 3))
-      //const log_var = await tf.randomNormal([3]).data()
-      const log_var = new Float32Array([0, 0, 0])
-      const output = await this.run(mean, log_var as Float32Array)
+      const mean = points.slice(i, i + 3)
+      const mean_t = tf.tensor([[...mean]])
+      const log_var = await mean_to_log.run(mean_t)
+      const log_var_d = await log_var.data()
+
+      const output = await this.run(
+        new Float32Array(mean),
+        log_var_d as Float32Array
+      )
 
       output_tensors.push(output as tf.Tensor2D)
     }
     return output_tensors
   }
 
-  public async latentTraversal(points: number[]) {
-    const image_tensors = await this.generateImageTensors(points)
+  public async latentTraversal(points: number[], mean_to_log: NN) {
+    const image_tensors = await this.generateImageTensors(points, mean_to_log)
 
     image_tensors.forEach((t: tf.Tensor2D) => {
       const canvas = document.createElement('canvas')

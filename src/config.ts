@@ -2,11 +2,11 @@ type AllConfigs = { [key: string]: Config }
 
 interface Config {
   path: string
-  mean: string
-  log_var: string
-  labels: string
-  width: number
-  height: number
+  mean?: string
+  log_var?: string
+  labels?: string
+  width?: number
+  height?: number
   input_shape: number[]
 }
 
@@ -27,6 +27,10 @@ export const config: AllConfigs = {
     labels: './assets/model_data/fashion/train_labels.npy',
     width: 28,
     height: 28,
+    input_shape: [1, 3],
+  },
+  mean_to_logvar: {
+    path: './assets/mean_to_logvar/model.json',
     input_shape: [1, 3],
   },
 }

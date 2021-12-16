@@ -12,6 +12,7 @@ import Curve from './curve'
 import NP_Loader from './npy_loader'
 import Arcball from './arcball_quat'
 import VAE from './vae'
+import NN from './neural_net'
 import { config } from './config'
 
 type UniformDescs = {
@@ -131,6 +132,7 @@ const populateOutput = (id: number, mean: Float32Array, log: Float32Array) => {
 }
 
 let vae: VAE
+let mean_to_log: NN
 
 function main(model_name: string) {
   // - MODEL ------------------------------------------------
@@ -139,6 +141,7 @@ function main(model_name: string) {
   )
   if (vae) vae.dispose()
   vae = new VAE(config[model_name], model_canvas)
+  mean_to_log = new NN(config.mean_to_logvar)
   // --------------------------------------------------------
 
   const data_promises = [
@@ -148,19 +151,21 @@ function main(model_name: string) {
   ].map((data) => n.load(data))
 
   Promise.all(data_promises).then(([labels, mean_vals, log_vals]) => {
-    //const curve = new Curve(gl, [
-    //[-2, -2, -2],
-    //[0, 2, -1],
-    //[-3, 1, -0.5],
-    //[0.5, -3, 1],
-    //[2, 2, 2],
-    //])
-    const curve = new Curve(gl, 'circle')
+    const curve = new Curve(gl, [
+      [-2, -2, -2],
+      [0, 2, -1],
+      [-3, 1, -0.5],
+      [0.5, -3, 1],
+      [2, 2, 2],
+    ])
+    //const curve = new Curve(gl, 'circle')
     curve.linkProgram(curve_program)
 
     document
       .getElementsByTagName('button')[0]
-      .addEventListener('click', () => vae.latentTraversal(curve.verts))
+      .addEventListener('click', () =>
+        vae.latentTraversal(curve.verts, mean_to_log)
+      )
 
     const geom = new LatentPoints(gl, mean_vals, labels)
     geom.normalizeVerts()
