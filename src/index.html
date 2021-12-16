@@ -24,15 +24,17 @@
     </style>
   </head>
   <body>
-    <p id="latent_id"></p>
+    <p id="output_id"></p>
+    <p id="output_mean"></p>
+    <p id="output_log"></p>
     <canvas id="model_output"></canvas>
     <ul id="pallette"></ul>
 
     <form>
       <label for="models">Choose a model:</label>
       <select name="models" id="models">
+        <option value="mnist">MNIST</option>
         <option value="fashion_mnist">Fashion MNIST</option>
-        <option value="mnist">MNIST Handwritten Digits</option>
       </select>
       <input type="submit" value="Submit" />
     </form>
