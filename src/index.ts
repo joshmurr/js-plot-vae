@@ -1,5 +1,3 @@
-import * as tf from '@tensorflow/tfjs'
-
 import { vec3, mat4 } from 'gl-matrix'
 
 import GL_Handler from './gl_handler'
@@ -7,52 +5,14 @@ import { latentVert, latentFrag } from './shader_programs/basic'
 import LatentPoints from './latent_points'
 import NP_Loader from './npy_loader'
 import Arcball from './arcball_quat'
+import Model from './model'
+import config from './config'
 
-import all_z_mean from './assets/all_z_mean_fashion.npy'
-import all_log_var from './assets/all_log_var_fashion.npy'
-import all_labels from './assets/all_train_labels_fashion.npy'
+const MODEL_NAME = 'mnist'
 
-// TFJS ---------------------------------------------------
-const DECODER_PATH = './assets/vae_decoder_fashion/model.json'
-
+// - MODEL ------------------------------------------------
 const model_canvas = <HTMLCanvasElement>document.getElementById('model_output')
-const ctx = model_canvas.getContext('2d')
-
-let decoder_model: tf.GraphModel
-model_canvas.width = 28
-model_canvas.height = 28
-
-ctx.fillStyle = 'black'
-ctx.fillRect(0, 0, model_canvas.width, model_canvas.height)
-
-const reparameterize = (mean: Float32Array, logvar: Float32Array) => {
-  const m = tf.tensor(mean)
-  const l = tf.tensor(logvar)
-  const exp = tf.exp(l.mul(0.5)).add(m)
-  //const eps = tf.randomNormal(m.shape) // .mul(exp).add(m)
-  //const res = eps.mul(exp).add(m)
-  //const res = exp.add(m)
-
-  return exp
-}
-
-const init = async () => {
-  decoder_model = await tf.loadGraphModel(DECODER_PATH)
-  const ret = decoder_model.predict(tf.zeros([1, 3])) as tf.Tensor
-  ret.dispose()
-}
-
-init()
-
-const run_model = async (mean: Float32Array, logvar: Float32Array) => {
-  const logits = tf.tidy(() => {
-    const z = reparameterize(mean, logvar).expandDims(0)
-    const decoded = decoder_model.predict(z) as tf.Tensor
-    return decoded.sigmoid()
-  })
-  const d = logits.squeeze()
-  tf.browser.toPixels(d as tf.Tensor2D, model_canvas)
-}
+const model = new Model(config[MODEL_NAME], model_canvas)
 // --------------------------------------------------------
 
 type UniformDescs = {
@@ -67,15 +27,15 @@ const gl = G.gl
 const program = G.shaderProgram(latentVert, latentFrag)
 
 const camPos: [number, number, number] = [0, 0, 2]
-let viewMatrix = G.viewMat({ pos: vec3.fromValues(...camPos) })
-const projMatrix = G.defaultProjMat()
+let viewMat = G.viewMat({ pos: vec3.fromValues(...camPos) })
+const projMat = G.defaultProjMat()
 const modelMat = mat4.create()
 
 const uniforms: UniformDescs = {
   u_ModelMatrix: modelMat,
-  u_ViewMatrix: viewMatrix,
-  u_ProjectionMatrix: projMatrix,
-  u_useUid: 0,
+  u_ViewMatrix: viewMat,
+  u_ProjectionMatrix: projMat,
+  u_UseUid: 0,
   u_IdSelected: -1,
   u_PointSize: 8.0,
 }
@@ -132,101 +92,98 @@ canvas.addEventListener('mouseup', () => {
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault()
   camPos[2] = camPos[2] - e.deltaY * -0.001
-  viewMatrix = G.viewMat({ pos: vec3.fromValues(...camPos) })
+  viewMat = G.viewMat({ pos: vec3.fromValues(...camPos) })
 })
 
-//const slice = 30000
-//const select = 9
-
 // --------------
-const labels = n.load(all_labels)
-const latent_vals = n.load(all_z_mean)
-const log_vals = n.load(all_log_var)
 
-Promise.all([labels, latent_vals, log_vals]).then(
-  ([labels, latent_vals, log_vals]) => {
-    const latents = new LatentPoints(gl, latent_vals, labels)
-    latents.normalizeVerts()
-    //latents.centreVerts()
-    latents.linkProgram(program)
+const data_promises = [
+  config[MODEL_NAME].labels,
+  config[MODEL_NAME].mean,
+  config[MODEL_NAME].log_var,
+].map((data) => n.load(data))
 
-    latents.pallette.map((rgba, i) => {
-      const li = document.createElement('li')
-      li.innerText = String(i)
-      const [r, g, b] = rgba
-      li.style.background = `rgb(${r * 255},${g * 255},${b * 255})`
-      document.getElementById('pallette').appendChild(li)
+Promise.all(data_promises).then(([labels, latent_vals, log_vals]) => {
+  const latents = new LatentPoints(gl, latent_vals, labels)
+  latents.normalizeVerts()
+  latents.linkProgram(program)
+
+  latents.pallette.map((rgba, i) => {
+    const li = document.createElement('li')
+    li.innerText = String(i)
+    const [r, g, b] = rgba
+    li.style.background = `rgb(${r * 255},${g * 255},${b * 255})`
+    document.getElementById('pallette').appendChild(li)
+  })
+
+  function draw() {
+    G.setFramebufferAttachmentSizes(
+      canvas.width,
+      canvas.height,
+      pickingTex,
+      depthBuffer
+    )
+
+    gl.bindVertexArray(latents.VAO)
+
+    // Draw for picking ---
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
+    gl.viewport(0, 0, canvas.width, canvas.height)
+
+    G.setUniforms(uniformSetters, {
+      u_ModelMatrix: modelMat,
+      u_ViewMatrix: viewMat,
+      u_UseUid: 1,
+      u_PointSize: 8 - (Math.log(camPos[2]) + 1),
     })
 
-    function draw() {
-      G.setFramebufferAttachmentSizes(
-        canvas.width,
-        canvas.height,
-        pickingTex,
-        depthBuffer
-      )
+    gl.drawArrays(gl.POINTS, 0, latents.numVertices)
+    //----------------------
 
-      gl.bindVertexArray(latents.VAO)
+    // Mouse pixel ---------
+    const pixelX = (mouseX * gl.canvas.width) / gl.canvas.clientWidth
+    const pixelY =
+      gl.canvas.height -
+      (mouseY * gl.canvas.height) / gl.canvas.clientHeight -
+      1
+    const data = new Uint8Array(4)
+    gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data)
+    let id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
+    if (id > 0) {
+      const idx = (id - 1) * 3
+      const z_mean = latent_vals.data.slice(idx, idx + 3)
+      const log_var = log_vals.data.slice(idx, idx + 3)
+      const x = z_mean[0] < 0 ? z_mean[0].toFixed(4) : z_mean[0].toFixed(5)
+      const y = z_mean[1] < 0 ? z_mean[1].toFixed(4) : z_mean[1].toFixed(5)
+      const z = z_mean[2] < 0 ? z_mean[2].toFixed(4) : z_mean[2].toFixed(5)
+      output_span.innerText = `ID: ${id}\t\tx: ${x},\ty: ${y},\tz: ${z}`
 
-      // Draw for picking ---
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
-      gl.viewport(0, 0, canvas.width, canvas.height)
-
-      G.setUniforms(uniformSetters, {
-        u_ModelMatrix: modelMat,
-        u_ViewMatrix: viewMatrix,
-        u_useUid: 1,
-        u_PointSize: 8 - (Math.log(camPos[2]) + 1),
-      })
-
-      gl.drawArrays(gl.POINTS, 0, latents.numVertices)
-      //----------------------
-
-      // Mouse pixel ---------
-      const pixelX = (mouseX * gl.canvas.width) / gl.canvas.clientWidth
-      const pixelY =
-        gl.canvas.height -
-        (mouseY * gl.canvas.height) / gl.canvas.clientHeight -
-        1
-      const data = new Uint8Array(4)
-      gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data)
-      let id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
-      if (id > 0) {
-        const idx = (id - 1) * 3
-        const z_mean = latent_vals.data.slice(idx, idx + 3)
-        const log_var = log_vals.data.slice(idx, idx + 3)
-        const x = z_mean[0] < 0 ? z_mean[0].toFixed(4) : z_mean[0].toFixed(5)
-        const y = z_mean[1] < 0 ? z_mean[1].toFixed(4) : z_mean[1].toFixed(5)
-        const z = z_mean[2] < 0 ? z_mean[2].toFixed(4) : z_mean[2].toFixed(5)
-        output_span.innerText = `ID: ${id}\t\tx: ${x},\ty: ${y},\tz: ${z}`
-
-        run_model(<Float32Array>z_mean, <Float32Array>log_var)
-      }
-      //----------------------
-
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-      gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-
-      G.setUniforms(uniformSetters, { u_useUid: 0, u_IdSelected: id - 1 })
-
-      gl.clearDepth(1.0)
-      gl.enable(gl.CULL_FACE)
-      gl.enable(gl.DEPTH_TEST)
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-      gl.clearColor(0.9, 0.9, 0.9, 1)
-
-      gl.drawArrays(gl.POINTS, 0, latents.numVertices)
-
-      gl.bindVertexArray(null)
-      gl.bindBuffer(gl.ARRAY_BUFFER, null)
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
-
-      id = -1
-      requestAnimationFrame(draw)
+      model.run(<Float32Array>z_mean, <Float32Array>log_var)
     }
-    draw()
+    //----------------------
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+
+    G.setUniforms(uniformSetters, { u_UseUid: 0, u_IdSelected: id - 1 })
+
+    gl.clearDepth(1.0)
+    gl.enable(gl.CULL_FACE)
+    gl.enable(gl.DEPTH_TEST)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+    gl.clearColor(0.9, 0.9, 0.9, 1)
+
+    gl.drawArrays(gl.POINTS, 0, latents.numVertices)
+
+    gl.bindVertexArray(null)
+    gl.bindBuffer(gl.ARRAY_BUFFER, null)
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
+
+    id = -1
+    requestAnimationFrame(draw)
   }
-)
+  draw()
+})
 
 /* Select particular class code
  * ----------------------------

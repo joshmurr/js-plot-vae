@@ -1,7 +1,5 @@
 import { vec3, mat4 } from 'gl-matrix'
 
-/* INTERFACES */
-
 interface AttribDesc {
   location: number // Attrib loc
   num_components: number
@@ -22,11 +20,6 @@ interface BufferDesc {
   attributes: AllAttribDesc
 }
 
-//interface VAODesc {
-//vao: WebGLVertexArrayObject
-//buffers: Array<BufferDesc>
-//}
-
 type Verts =
   | Array<number>
   | Uint8Array
@@ -36,8 +29,6 @@ type Verts =
   | Int32Array
   | Float32Array
   | Float64Array
-//| BigUint64Array
-//| BigInt64Array
 
 interface UniformDesc<T> {
   type: string
@@ -49,8 +40,6 @@ interface RotationDesc {
   speed: number
   axis: [number, number, number]
 }
-
-/* GEOMETRY CLASS */
 
 export default abstract class Geometry {
   gl: WebGL2RenderingContext
@@ -79,9 +68,9 @@ export default abstract class Geometry {
     this.gl = gl
   }
 
-  abstract linkProgram(_program: WebGLProgram): void
+  protected abstract linkProgram(_program: WebGLProgram): void
 
-  setupVAO(_buffers: Array<BufferDesc>, _VAO: WebGLVertexArrayObject) {
+  public setupVAO(_buffers: Array<BufferDesc>, _VAO: WebGLVertexArrayObject) {
     this.gl.bindVertexArray(_VAO)
 
     _buffers.map((buffer) => {
@@ -122,41 +111,34 @@ export default abstract class Geometry {
     this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, null)
   }
 
-  updateUniform(_uniform: string, _val: number) {
-    if (_uniform in this._uniforms) {
-      this._uniforms[_uniform].value = _val
-    }
-  }
-
-  get VAO() {
+  public get VAO() {
     return this._VAOs[0]
   }
 
-  get uniforms() {
-    return this._uniforms
-  }
-
-  get numVertices() {
+  public get numVertices() {
     return this._verts.length / 3
   }
 
-  get numIndices() {
+  public get numIndices() {
     return this._indices.length
   }
 
-  get buffers() {
+  public get buffers() {
     return this._buffers
   }
-  get translate() {
+
+  public get translate() {
     return this._translate
   }
+
   set translate(loc) {
     this._uniformsNeedsUpdate = true
     this._translate[0] = loc[0]
     this._translate[1] = loc[1]
     this._translate[2] = loc[2]
   }
-  set rotate(speedAxis: RotationDesc) {
+
+  public set rotate(speedAxis: RotationDesc) {
     this._uniformsNeedsUpdate = true
     const [s, r] = Object.values(speedAxis)
     this._rotation.speed = s
@@ -165,15 +147,15 @@ export default abstract class Geometry {
     this._rotation.axis[2] = r[2]
   }
 
-  set oscillate(val: boolean) {
+  public set oscillate(val: boolean) {
     if (typeof val === 'boolean') this._oscillate = val
   }
 
-  get needsUpdate() {
+  public get needsUpdate() {
     return this._uniformsNeedsUpdate
   }
 
-  updateModelMatrix(_time: number) {
+  public updateModelMatrix(_time: number) {
     mat4.identity(this._modelMatrix)
     const translation = vec3.fromValues(...this._translate)
     mat4.translate(this._modelMatrix, this._modelMatrix, translation)
@@ -188,14 +170,14 @@ export default abstract class Geometry {
     return this._modelMatrix
   }
 
-  updateInverseModelMatrix() {
+  public updateInverseModelMatrix() {
     mat4.invert(
       this._uniforms['u_InverseModelMatrix'].value as mat4,
       this._uniforms['u_ModelMatrix'].value as mat4
     )
   }
 
-  normalizeEachVert() {
+  public normalizeEachVert() {
     for (let i = 0; i < this._verts.length; i += 3) {
       const norm = this.normalize(
         this._verts[i],
@@ -208,13 +190,15 @@ export default abstract class Geometry {
     }
   }
 
-  normalizeVerts() {
+  public normalizeVerts() {
     let min = Number.POSITIVE_INFINITY
     let max = Number.NEGATIVE_INFINITY
     const vectors: Array<vec3> = []
     for (let i = 0; i < this._verts.length; i += 3) {
       const v = vec3.fromValues(
         this._verts[i],
+        /* GEOMETRY CLASS */
+
         this._verts[i + 1],
         this._verts[i + 2]
       )
@@ -235,12 +219,12 @@ export default abstract class Geometry {
     }
   }
 
-  normalize(a: number, b: number, c: number) {
+  private normalize(a: number, b: number, c: number) {
     const len = Math.sqrt(a * a + b * b + c * c)
     return [a / len, b / len, c / len]
   }
 
-  centreVerts() {
+  public centreVerts() {
     if (!this._centroid) this.calcCentroid()
 
     for (let i = 0; i < this._verts.length; i += 3) {
@@ -250,7 +234,7 @@ export default abstract class Geometry {
     }
   }
 
-  calcCentroid() {
+  private calcCentroid() {
     let xs = 0
     let ys = 0
     let zs = 0
