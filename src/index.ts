@@ -1,8 +1,14 @@
 import { vec3, mat4 } from 'gl-matrix'
 
 import GL_Handler from './gl_handler'
-import { latentVert, latentFrag } from './shader_programs/basic'
+import {
+  latentVert,
+  latentFrag,
+  basicVert,
+  basicFrag,
+} from './shader_programs/basic'
 import LatentPoints from './latent_points'
+import Curve from './curve'
 import NP_Loader from './npy_loader'
 import Arcball from './arcball_quat'
 import Model from './model'
@@ -12,11 +18,15 @@ type UniformDescs = {
   [key: string]: number | number[] | mat4 | vec3
 }
 
+const getUserSelection = () => {
+  const select = document.getElementById('models') as HTMLSelectElement
+  return select.value
+}
+
 document.getElementsByTagName('form')[0].onsubmit = (e) => {
   e.preventDefault()
 
-  const select = document.getElementById('models') as HTMLSelectElement
-  const model_name = select.value
+  const model_name = getUserSelection()
   main(model_name)
 
   return false
@@ -27,25 +37,30 @@ const G = new GL_Handler()
 const canvas = G.canvas(512, 512, true)
 const gl = G.gl
 const program = G.shaderProgram(latentVert, latentFrag)
+const curve_program = G.shaderProgram(basicVert, basicFrag)
 
 const camPos: [number, number, number] = [0, 0, 2]
 let viewMat = G.viewMat({ pos: vec3.fromValues(...camPos) })
 const projMat = G.defaultProjMat()
 const modelMat = mat4.create()
 
-const uniforms: UniformDescs = {
+const baseUniforms: UniformDescs = {
   u_ModelMatrix: modelMat,
   u_ViewMatrix: viewMat,
   u_ProjectionMatrix: projMat,
+}
+
+const uniforms: UniformDescs = {
+  ...baseUniforms,
   u_UseUid: 0,
   u_IdSelected: -1,
   u_PointSize: 8.0,
 }
 
 const uniformSetters = G.getUniformSetters(program)
+const curveUniformSetters = G.getUniformSetters(curve_program)
 
 gl.useProgram(program)
-
 G.setUniforms(uniformSetters, uniforms)
 
 // -- PICKING ---
@@ -70,7 +85,6 @@ let mouseX = -1
 let mouseY = -1
 let mousedown = false
 
-const output_span = document.getElementById('latent_id')
 canvas.addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect()
   mouseX = e.clientX - rect.left
@@ -103,6 +117,19 @@ canvas.addEventListener('wheel', (e) => {
   viewMat = G.viewMat({ pos: vec3.fromValues(...camPos) })
 })
 
+const arrayToXYZ = (a: Float32Array) =>
+  `x: ${a[0].toFixed(4)},\ty: ${a[1].toFixed(4)},\tz: ${a[2].toFixed(4)}`
+
+const populateOutput = (id: number, mean: Float32Array, log: Float32Array) => {
+  const output_id = document.getElementById('output_id')
+  const output_mean = document.getElementById('output_mean')
+  const output_log = document.getElementById('output_log')
+
+  output_id.innerText = `ID: ${id}`
+  output_mean.innerText = `Mean\t\t${arrayToXYZ(mean)}`
+  output_log.innerText = `Log Var\t\t${arrayToXYZ(log)}`
+}
+
 let model: Model
 
 function main(model_name: string) {
@@ -122,6 +149,11 @@ function main(model_name: string) {
   ].map((data) => n.load(data))
 
   Promise.all(data_promises).then(([labels, mean_vals, log_vals]) => {
+    // CURVE ------------------
+    const curve = new Curve(gl)
+    curve.linkProgram(curve_program)
+    // ------------------------
+
     const geom = new LatentPoints(gl, mean_vals, labels)
     geom.normalizeVerts()
     geom.linkProgram(program)
@@ -136,7 +168,9 @@ function main(model_name: string) {
       pallette_el.appendChild(li)
     })
 
+    gl.viewport(0, 0, canvas.width, canvas.height)
     function draw() {
+      gl.useProgram(program)
       G.setFramebufferAttachmentSizes(
         canvas.width,
         canvas.height,
@@ -148,7 +182,6 @@ function main(model_name: string) {
 
       // Draw for picking ---
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
-      gl.viewport(0, 0, canvas.width, canvas.height)
 
       G.setUniforms(uniformSetters, {
         u_ModelMatrix: modelMat,
@@ -168,22 +201,18 @@ function main(model_name: string) {
         1
       const data = new Uint8Array(4)
       gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data)
-      let id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
+      const id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
       if (id > 0) {
         const idx = (id - 1) * 3
-        const z_mean = mean_vals.data.slice(idx, idx + 3)
-        const log_var = log_vals.data.slice(idx, idx + 3)
-        const x = z_mean[0] < 0 ? z_mean[0].toFixed(4) : z_mean[0].toFixed(5)
-        const y = z_mean[1] < 0 ? z_mean[1].toFixed(4) : z_mean[1].toFixed(5)
-        const z = z_mean[2] < 0 ? z_mean[2].toFixed(4) : z_mean[2].toFixed(5)
-        output_span.innerText = `ID: ${id}\t\tx: ${x},\ty: ${y},\tz: ${z}`
+        const mean = mean_vals.data.slice(idx, idx + 3) as Float32Array
+        const log_var = log_vals.data.slice(idx, idx + 3) as Float32Array
+        populateOutput(id, mean, log_var)
 
-        model.run(<Float32Array>z_mean, <Float32Array>log_var)
+        model.run(mean, log_var)
       }
       //----------------------
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-      gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
 
       G.setUniforms(uniformSetters, { u_UseUid: 0, u_IdSelected: id - 1 })
 
@@ -195,18 +224,26 @@ function main(model_name: string) {
 
       gl.drawArrays(gl.POINTS, 0, geom.numVertices)
 
+      gl.useProgram(curve_program)
+      gl.bindVertexArray(curve.VAO)
+      G.setUniforms(curveUniformSetters, {
+        ...baseUniforms,
+        u_ViewMatrix: viewMat,
+      })
+      gl.drawElements(gl.LINES, curve.numIndices, gl.UNSIGNED_SHORT, 0)
+
       gl.bindVertexArray(null)
       gl.bindBuffer(gl.ARRAY_BUFFER, null)
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
 
-      id = -1
+      //id = -1
       requestAnimationFrame(draw)
     }
     draw()
   })
 }
 
-main('fashion_mnist')
+main(getUserSelection())
 
 /* Select particular class code
  * ----------------------------
