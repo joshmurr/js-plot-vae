@@ -20,7 +20,7 @@ out vec4 OUTCOLOUR;
 void main(){
     float distance = length(2.0 * gl_PointCoord - 1.0);
     if (distance > 0.5) {
-            discard;
+        discard;
     }
     OUTCOLOUR = vec4(0.0, 0.0, 0.0, 1.0);
 }`
@@ -48,6 +48,7 @@ void main(){
 
     if(u_IdSelected == gl_VertexID) {
         gl_PointSize = (gl_Position.z * -1.0) + u_PointSize * 4.0;
+        v_Color *= 0.5;
     } else{
         gl_PointSize = (gl_Position.z * -1.0) + u_PointSize;
     }
@@ -67,6 +68,5 @@ void main(){
     if (distance > u_PointSize * 0.1) {
         discard;
     }
-
     OUTCOLOUR = u_UseUid ? vec4(v_Uid, 0.0) : vec4(v_Color, 1.0);
 }`

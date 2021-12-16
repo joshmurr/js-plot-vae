@@ -62,7 +62,7 @@ export default class Model {
     const eps = tf.randomNormal(m.shape)
     const ret = eps.mul(exp).add(m)
 
-    return exp
+    return ret
   }
 
   public dispose() {
