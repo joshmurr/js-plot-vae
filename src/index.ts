@@ -152,7 +152,9 @@ function main(model_name: string) {
     // CURVE ------------------
     const curve = new Curve(gl, [
       [-2, -2, -2],
-      [0, 2, 0],
+      [0, 2, -1],
+      [-3, 1, -0.5],
+      [0.5, -3, 1],
       [2, 2, 2],
     ])
     curve.linkProgram(curve_program)
