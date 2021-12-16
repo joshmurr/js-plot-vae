@@ -4,6 +4,7 @@ interface Config {
   path: string
   mean?: string
   log_var?: string
+  z?: string
   labels?: string
   width?: number
   height?: number
@@ -13,9 +14,9 @@ interface Config {
 export const config: AllConfigs = {
   mnist: {
     path: './assets/vae_decoder2/model.json',
-    mean: './assets/model_data/mnist/mean.npy',
-    log_var: './assets/model_data/mnist/log_var.npy',
-    labels: './assets/model_data/mnist/train_labels.npy',
+    z: './assets/model_data/mnist/all_z_mnist.npy',
+    //log_var: './assets/model_data/mnist/log_var.npy',
+    labels: './assets/model_data/mnist/all_train_labels_mnist.npy',
     width: 28,
     height: 28,
     input_shape: [1, 3],

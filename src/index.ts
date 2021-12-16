@@ -12,7 +12,6 @@ import Curve from './curve'
 import NP_Loader from './npy_loader'
 import Arcball from './arcball_quat'
 import VAE from './vae'
-import NN from './neural_net'
 import { config } from './config'
 
 type UniformDescs = {
@@ -121,18 +120,17 @@ canvas.addEventListener('wheel', (e) => {
 const arrayToXYZ = (a: Float32Array) =>
   `x: ${a[0].toFixed(4)},\ty: ${a[1].toFixed(4)},\tz: ${a[2].toFixed(4)}`
 
-const populateOutput = (id: number, mean: Float32Array, log: Float32Array) => {
+const populateOutput = (id: number, mean: Float32Array) => {
   const output_id = document.getElementById('output_id')
   const output_mean = document.getElementById('output_mean')
-  const output_log = document.getElementById('output_log')
+  //const output_log = document.getElementById('output_log')
 
   output_id.innerText = `ID: ${id}`
   output_mean.innerText = `Mean\t\t${arrayToXYZ(mean)}`
-  output_log.innerText = `Log Var\t\t${arrayToXYZ(log)}`
+  //output_log.innerText = `Log Va)}`
 }
 
 let vae: VAE
-let mean_to_log: NN
 
 function main(model_name: string) {
   // - MODEL ------------------------------------------------
@@ -141,16 +139,16 @@ function main(model_name: string) {
   )
   if (vae) vae.dispose()
   vae = new VAE(config[model_name], model_canvas)
-  mean_to_log = new NN(config.mean_to_logvar)
+  //mean_to_log = new NN(config.mean_to_logvar)
   // --------------------------------------------------------
 
   const data_promises = [
     config[model_name].labels,
-    config[model_name].mean,
-    config[model_name].log_var,
+    config[model_name].z,
+    //config[model_name].log_var,
   ].map((data) => n.load(data))
 
-  Promise.all(data_promises).then(([labels, mean_vals, log_vals]) => {
+  Promise.all(data_promises).then(([labels, mean_vals]) => {
     const curve = new Curve(gl, [
       [-2, -2, -2],
       [0, 2, -1],
@@ -163,9 +161,7 @@ function main(model_name: string) {
 
     document
       .getElementsByTagName('button')[0]
-      .addEventListener('click', () =>
-        vae.latentTraversal(curve.verts, mean_to_log)
-      )
+      .addEventListener('click', () => vae.latentTraversal(curve.verts))
 
     const geom = new LatentPoints(gl, mean_vals, labels)
     geom.normalizeVerts()
@@ -218,10 +214,10 @@ function main(model_name: string) {
       if (id > 0) {
         const idx = (id - 1) * 3
         const mean = mean_vals.data.slice(idx, idx + 3) as Float32Array
-        const log_var = log_vals.data.slice(idx, idx + 3) as Float32Array
-        populateOutput(id, mean, log_var)
+        //const log_var = log_vals.data.slice(idx, idx + 3) as Float32Array
+        populateOutput(id, mean)
 
-        vae.run(mean, log_var)
+        vae.run(mean)
       }
       //----------------------
 
