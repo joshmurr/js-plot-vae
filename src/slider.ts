@@ -10,7 +10,7 @@ export default class Slider {
     this._slider = document.createElement('input')
     this._slider.type = 'range'
     this._slider.min = String(min)
-    this._slider.max = String(max)
+    this._slider.max = String(max - 1)
     this._slider.value = String(value)
     this._slider.step = String(step)
     this._slider.classList.add('latent-slider')
@@ -20,7 +20,15 @@ export default class Slider {
       .appendChild(this._slider)
   }
 
+  public setEventListener(func: () => void) {
+    this._slider.addEventListener('change', func)
+  }
+
   get value() {
-    return this._slider.value
+    return parseInt(this._slider.value)
+  }
+
+  get max() {
+    return parseInt(this._slider.max)
   }
 }

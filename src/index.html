@@ -9,8 +9,15 @@
       * {
         font-family: monospace;
       }
+      #container {
+        display: flex;
+        flex-direction: row;
+      }
       canvas {
         display: inline-block;
+      }
+      .border {
+        border: 2px solid red;
       }
       #model_output {
         width: 128px;
@@ -24,21 +31,28 @@
     </style>
   </head>
   <body>
-    <p id="output_id"></p>
-    <p id="output_mean"></p>
-    <p id="output_log"></p>
-    <canvas id="model_output"></canvas>
-    <ul id="pallette"></ul>
+    <div id="container">
+      <div id="canvas"></div>
 
-    <form>
-      <label for="models">Choose a model:</label>
-      <select name="models" id="models">
-        <option value="mnist">MNIST</option>
-        <option value="fashion_mnist">Fashion MNIST</option>
-      </select>
-      <input type="submit" value="Submit" />
-    </form>
-    <button type="button">Generate Latent Traversal</button>
-    <div class="slide-container"></div>
+      <div id="info">
+        <p id="output_id"></p>
+        <p id="output_z"></p>
+        <p id="output_traversal"></p>
+        <canvas id="model_output"></canvas>
+        <ul id="pallette"></ul>
+
+        <form>
+          <label for="models">Choose a model:</label>
+          <select name="models" id="models">
+            <option value="mnist">MNIST</option>
+            <option value="fashion_mnist">Fashion MNIST</option>
+          </select>
+          <input type="submit" value="Submit" />
+        </form>
+        <button type="button">Generate Latent Traversal</button>
+        <div class="slide-container"></div>
+      </div>
+    </div>
+    <div id="latent_images"></div>
   </body>
 </html>

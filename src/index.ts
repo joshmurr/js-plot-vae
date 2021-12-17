@@ -38,7 +38,7 @@ document.getElementsByTagName('form')[0].onsubmit = (e) => {
 
 const n = new NP_Loader()
 const G = new GL_Handler()
-const canvas = G.canvas(512, 512, true)
+const canvas = G.canvas(800, 800, true, document.getElementById('canvas'))
 const gl = G.gl
 
 const points_program = G.shaderProgram(latentVert, latentFrag)
@@ -135,12 +135,20 @@ canvas.addEventListener('wheel', (e) => {
 const arrayToXYZ = (a: Float32Array) =>
   `x: ${a[0].toFixed(4)},\ty: ${a[1].toFixed(4)},\tz: ${a[2].toFixed(4)}`
 
-const populateOutput = (id: number, mean: Float32Array) => {
-  const output_id = document.getElementById('output_id')
-  const output_mean = document.getElementById('output_mean')
+const populateOutput = (id: string, mean: Float32Array) => {
+  const el = document.getElementById(id)
+  el.innerText = `Mean\t\t${arrayToXYZ(mean)}`
+}
 
-  output_id.innerText = `ID: ${id}`
-  output_mean.innerText = `Mean\t\t${arrayToXYZ(mean)}`
+const generateCurve = (nPoints: number) => {
+  const randomVal = (min: number, max: number) =>
+    Math.random() * (max - min) + min
+  const randInt = (min: number, max: number) => Math.floor(randomVal(min, max))
+  const points = []
+  for (let i = 0; i < nPoints; i++) {
+    points.push([randInt(-3, 3), randInt(-3, 3), randInt(-3, 3)])
+  }
+  return points
 }
 
 let vae: VAE
@@ -160,18 +168,14 @@ function main(model_name: string) {
   )
 
   Promise.all(data_promises).then(([labels, z_vals]) => {
-    const curve = new Curve(gl, [
-      [0, 1.4, -1],
-      [-2, -2, -2],
-      [-3, 1, -0.5],
-      [2, 2, 2],
-      [0.5, -1.8, 1],
-    ])
     //const curve = new Curve(gl, 'circle')
+    const curve = new Curve(gl, generateCurve(5), 0.1)
     curve.linkProgram(curve_program)
 
     const traversal_points = new Points(gl, curve.verts)
     traversal_points.linkProgram(traversal_points_program)
+
+    console.log(traversal_points.numVertices)
 
     const traversalSlider = new Slider(
       0,
@@ -180,6 +184,21 @@ function main(model_name: string) {
       1,
       'traversalSlider'
     )
+    let prevIdx = traversalSlider.value
+    traversalSlider.setEventListener(() => {
+      const idx = traversalSlider.value
+      const vert_idx = idx * 3
+      const z = new Float32Array(curve.verts.slice(vert_idx, vert_idx + 3))
+      populateOutput('output_traversal', z)
+      vae.run(z)
+
+      const output_el = document.getElementById('latent_images')
+      const latent_images = output_el.getElementsByTagName('canvas')
+      latent_images[prevIdx].classList.remove('border')
+      latent_images[idx].classList.add('border')
+
+      prevIdx = idx
+    })
 
     document
       .getElementsByTagName('button')[0]
@@ -239,7 +258,8 @@ function main(model_name: string) {
       if (id > 0) {
         const idx = (id - 1) * 3
         const z = z_vals.data.slice(idx, idx + 3) as Float32Array
-        populateOutput(idx, z)
+        populateOutput('output_z', z)
+        document.getElementById('output_id').innerText = `ID: ${id}`
 
         vae.run(z)
       }
@@ -272,7 +292,7 @@ function main(model_name: string) {
       gl.bindVertexArray(traversal_points.VAO)
       G.setUniforms(traversal_points_uniform_setters, {
         ...traversal_points_uniforms,
-        u_IdSelected: parseInt(traversalSlider.value),
+        u_IdSelected: traversalSlider.value,
         u_ViewMatrix: viewMat,
       })
       gl.drawArrays(gl.POINTS, 0, traversal_points.numVertices)
