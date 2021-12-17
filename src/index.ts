@@ -4,11 +4,14 @@ import GL_Handler from './gl_handler'
 import {
   latentVert,
   latentFrag,
-  basicVert,
-  basicFrag,
+  basicPointVert,
+  basicPointFrag,
+  basicLineVert,
+  basicLineFrag,
 } from './shader_programs/basic'
 import LatentPoints from './latent_points'
 import Curve from './curve'
+import Points from './points'
 import NP_Loader from './npy_loader'
 import Arcball from './arcball_quat'
 import VAE from './vae'
@@ -36,8 +39,10 @@ const n = new NP_Loader()
 const G = new GL_Handler()
 const canvas = G.canvas(512, 512, true)
 const gl = G.gl
-const program = G.shaderProgram(latentVert, latentFrag)
-const curve_program = G.shaderProgram(basicVert, basicFrag)
+
+const points_program = G.shaderProgram(latentVert, latentFrag)
+const curve_program = G.shaderProgram(basicLineVert, basicLineFrag)
+const traversal_points_program = G.shaderProgram(basicPointVert, basicPointFrag)
 
 const camPos: [number, number, number] = [0, 0, 2]
 let viewMat = G.viewMat({ pos: vec3.fromValues(...camPos) })
@@ -50,18 +55,28 @@ const baseUniforms: UniformDescs = {
   u_ProjectionMatrix: projMat,
 }
 
-const uniforms: UniformDescs = {
+const z_points_uniforms: UniformDescs = {
   ...baseUniforms,
   u_UseUid: 0,
   u_IdSelected: -1,
   u_PointSize: 8.0,
 }
 
-const uniformSetters = G.getUniformSetters(program)
-const curveUniformSetters = G.getUniformSetters(curve_program)
+const traversal_points_uniforms: UniformDescs = {
+  ...baseUniforms,
+  u_PointSize: 8.0,
+}
 
-gl.useProgram(program)
-G.setUniforms(uniformSetters, uniforms)
+const z_points_uniform_setters = G.getUniformSetters(points_program)
+const curve_uniform_setters = G.getUniformSetters(curve_program)
+const traversal_points_uniform_setters = G.getUniformSetters(
+  traversal_points_program
+)
+
+gl.useProgram(points_program)
+G.setUniforms(z_points_uniform_setters, z_points_uniforms)
+gl.useProgram(traversal_points_program)
+G.setUniforms(traversal_points_uniform_setters, traversal_points_uniforms)
 
 // -- PICKING ---
 const pickingTex = G.createTexture(canvas.width, canvas.height)
@@ -146,14 +161,17 @@ function main(model_name: string) {
 
   Promise.all(data_promises).then(([labels, z_vals]) => {
     const curve = new Curve(gl, [
+      [0, 1.4, -1],
       [-2, -2, -2],
-      [0, 2, -1],
       [-3, 1, -0.5],
-      [0.5, -3, 1],
       [2, 2, 2],
+      [0.5, -1.8, 1],
     ])
     //const curve = new Curve(gl, 'circle')
     curve.linkProgram(curve_program)
+
+    const traversal_points = new Points(gl, curve.verts)
+    traversal_points.linkProgram(traversal_points_program)
 
     document
       .getElementsByTagName('button')[0]
@@ -162,13 +180,13 @@ function main(model_name: string) {
     //const slice = 100
     //z_vals.data = z_vals.data.slice(0, slice * 3)
     //labels.data = labels.data.slice(0, slice)
-    const geom = new LatentPoints(gl, z_vals, labels)
-    geom.normalizeVerts()
-    geom.linkProgram(program)
+    const z_points = new LatentPoints(gl, z_vals, labels)
+    z_points.normalizeVerts()
+    z_points.linkProgram(points_program)
 
     const pallette_el = document.getElementById('pallette')
     pallette_el.innerHTML = ''
-    geom.pallette.map((rgba, i) => {
+    z_points.pallette.map((rgba, i) => {
       const li = document.createElement('li')
       li.innerText = String(i)
       const [r, g, b] = rgba
@@ -178,7 +196,7 @@ function main(model_name: string) {
 
     gl.viewport(0, 0, canvas.width, canvas.height)
     function draw() {
-      gl.useProgram(program)
+      gl.useProgram(points_program)
       G.setFramebufferAttachmentSizes(
         canvas.width,
         canvas.height,
@@ -186,19 +204,19 @@ function main(model_name: string) {
         depthBuffer
       )
 
-      gl.bindVertexArray(geom.VAO)
+      gl.bindVertexArray(z_points.VAO)
 
       // Draw for picking ---
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
 
-      G.setUniforms(uniformSetters, {
+      G.setUniforms(z_points_uniform_setters, {
         u_ModelMatrix: modelMat,
         u_ViewMatrix: viewMat,
         u_UseUid: 1,
         u_PointSize: 8 - (Math.log(camPos[2]) + 1),
       })
 
-      gl.drawArrays(gl.POINTS, 0, geom.numVertices)
+      gl.drawArrays(gl.POINTS, 0, z_points.numVertices)
       //----------------------
 
       // Mouse pixel ---------
@@ -221,7 +239,10 @@ function main(model_name: string) {
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 
-      G.setUniforms(uniformSetters, { u_UseUid: 0, u_IdSelected: id - 1 })
+      G.setUniforms(z_points_uniform_setters, {
+        u_UseUid: 0,
+        u_IdSelected: id - 1,
+      })
 
       gl.clearDepth(1.0)
       gl.enable(gl.CULL_FACE)
@@ -229,15 +250,23 @@ function main(model_name: string) {
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
       gl.clearColor(0.9, 0.9, 0.9, 1)
 
-      gl.drawArrays(gl.POINTS, 0, geom.numVertices)
+      gl.drawArrays(gl.POINTS, 0, z_points.numVertices)
 
       gl.useProgram(curve_program)
       gl.bindVertexArray(curve.VAO)
-      G.setUniforms(curveUniformSetters, {
+      G.setUniforms(curve_uniform_setters, {
         ...baseUniforms,
         u_ViewMatrix: viewMat,
       })
       gl.drawElements(gl.LINES, curve.numIndices, gl.UNSIGNED_SHORT, 0)
+
+      gl.useProgram(traversal_points_program)
+      gl.bindVertexArray(traversal_points.VAO)
+      G.setUniforms(traversal_points_uniform_setters, {
+        ...traversal_points_uniforms,
+        u_ViewMatrix: viewMat,
+      })
+      gl.drawArrays(gl.POINTS, 0, traversal_points.numVertices)
 
       gl.bindVertexArray(null)
       gl.bindBuffer(gl.ARRAY_BUFFER, null)
