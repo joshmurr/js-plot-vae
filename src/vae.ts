@@ -46,14 +46,8 @@ export default class VAE extends Model {
   private async generateImageTensors(points: number[]) {
     const output_tensors: Array<tf.Tensor2D> = []
     for (let i = 0; i < points.length; i += 3) {
-      const mean = points.slice(i, i + 3)
-      //const log_var = await mean_to_log.run(mean_t)
-      //const log_var_d = await log_var.data()
-
-      const output = await this.run(
-        new Float32Array(mean)
-        //log_var_d as Float32Array
-      )
+      const z = new Float32Array(points.slice(i, i + 3))
+      const output = await this.run(z)
 
       output_tensors.push(output as tf.Tensor2D)
     }
@@ -61,6 +55,9 @@ export default class VAE extends Model {
   }
 
   public async latentTraversal(points: number[]) {
+    const output_el = document.getElementById('latent_images')
+    output_el.innerHTML = ''
+
     const image_tensors = await this.generateImageTensors(points)
 
     image_tensors.forEach((t: tf.Tensor2D) => {
@@ -68,7 +65,7 @@ export default class VAE extends Model {
       canvas.width = this.config.width
       canvas.height = this.config.height
       tf.browser.toPixels(t, canvas)
-      document.body.appendChild(canvas)
+      output_el.appendChild(canvas)
     })
   }
 }

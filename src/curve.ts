@@ -2,10 +2,15 @@ import Geometry from './geometry'
 import { clamp } from './utils'
 
 export default class Curve extends Geometry {
-  private _t_step = 0.01
+  private _t_step: number
 
-  constructor(gl: WebGL2RenderingContext, _points: Array<number[]> | string) {
+  constructor(
+    gl: WebGL2RenderingContext,
+    _points: Array<number[]> | string,
+    _t_step = 0.2
+  ) {
     super(gl)
+    this._t_step = _t_step
     if (typeof _points === 'string') {
       switch (_points) {
         case 'circle':
