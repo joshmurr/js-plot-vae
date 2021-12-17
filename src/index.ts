@@ -143,10 +143,10 @@ const populateOutput = (id: string, mean: Float32Array) => {
 const generateCurve = (nPoints: number) => {
   const randomVal = (min: number, max: number) =>
     Math.random() * (max - min) + min
-  const randInt = (min: number, max: number) => Math.floor(randomVal(min, max))
+  //const randInt = (min: number, max: number) => Math.floor(randomVal(min, max))
   const points = []
   for (let i = 0; i < nPoints; i++) {
-    points.push([randInt(-3, 3), randInt(-3, 3), randInt(-3, 3)])
+    points.push([randomVal(-1, 1), randomVal(-1, 1), randomVal(-1, 1)])
   }
   return points
 }
@@ -169,7 +169,7 @@ function main(model_name: string) {
 
   Promise.all(data_promises).then(([labels, z_vals]) => {
     //const curve = new Curve(gl, 'circle')
-    const curve = new Curve(gl, generateCurve(5), 0.1)
+    const curve = new Curve(gl, generateCurve(5), 0.01)
     curve.linkProgram(curve_program)
 
     const traversal_points = new Points(gl, curve.verts)
