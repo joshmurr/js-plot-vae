@@ -1,6 +1,5 @@
 import * as tf from '@tensorflow/tfjs'
 import Model from './model'
-import NN from './neural_net'
 
 interface Config {
   path: string
@@ -48,7 +47,6 @@ export default class VAE extends Model {
     const output_tensors: Array<tf.Tensor2D> = []
     for (let i = 0; i < points.length; i += 3) {
       const mean = points.slice(i, i + 3)
-      const mean_t = tf.tensor([[...mean]])
       //const log_var = await mean_to_log.run(mean_t)
       //const log_var_d = await log_var.data()
 
