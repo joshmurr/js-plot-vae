@@ -153,6 +153,8 @@ const generateCurve = (nPoints: number) => {
 
 let vae: VAE
 
+const slider = new Slider()
+
 function main(model_name: string) {
   // - MODEL ------------------------------------------------
   const model_canvas = <HTMLCanvasElement>(
@@ -175,18 +177,13 @@ function main(model_name: string) {
     const traversal_points = new Points(gl, curve.verts)
     traversal_points.linkProgram(traversal_points_program)
 
-    console.log(traversal_points.numVertices)
+    slider.min = 0
+    slider.max = traversal_points.numVertices
+    slider.value = traversal_points.numVertices / 2
 
-    const traversalSlider = new Slider(
-      0,
-      traversal_points.numVertices,
-      traversal_points.numVertices / 2,
-      1,
-      'traversalSlider'
-    )
-    let prevIdx = traversalSlider.value
-    traversalSlider.setEventListener(() => {
-      const idx = traversalSlider.value
+    let prevIdx = slider.value
+    slider.setEventListener(() => {
+      const idx = slider.value
       const vert_idx = idx * 3
       const z = new Float32Array(curve.verts.slice(vert_idx, vert_idx + 3))
       populateOutput('output_traversal', z)
@@ -292,7 +289,7 @@ function main(model_name: string) {
       gl.bindVertexArray(traversal_points.VAO)
       G.setUniforms(traversal_points_uniform_setters, {
         ...traversal_points_uniforms,
-        u_IdSelected: traversalSlider.value,
+        u_IdSelected: slider.value,
         u_ViewMatrix: viewMat,
       })
       gl.drawArrays(gl.POINTS, 0, traversal_points.numVertices)

@@ -1,12 +1,7 @@
 export default class Slider {
   private _slider: HTMLInputElement
-  constructor(
-    min: number,
-    max: number,
-    value: number,
-    step: number,
-    id: string
-  ) {
+  constructor(min = 0, max = 10, value = 5, step = 1, id = 'slider') {
+    console.log('New slider')
     this._slider = document.createElement('input')
     this._slider.type = 'range'
     this._slider.min = String(min)
@@ -20,15 +15,31 @@ export default class Slider {
       .appendChild(this._slider)
   }
 
-  public setEventListener(func: () => void) {
-    this._slider.addEventListener('change', func)
+  public set min(val: number) {
+    this._slider.min = String(val)
   }
 
-  get value() {
+  public set max(val: number) {
+    this._slider.max = String(val)
+  }
+
+  public get max() {
+    return parseInt(this._slider.max)
+  }
+
+  public set value(val: number) {
+    this._slider.value = String(val)
+  }
+
+  public get value() {
     return parseInt(this._slider.value)
   }
 
-  get max() {
-    return parseInt(this._slider.max)
+  public set step(val: number) {
+    this._slider.step = String(val)
+  }
+
+  public setEventListener(func: () => void) {
+    this._slider.addEventListener('change', func)
   }
 }
