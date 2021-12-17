@@ -12,6 +12,7 @@ import {
 import LatentPoints from './latent_points'
 import Curve from './curve'
 import Points from './points'
+import Slider from './slider'
 import NP_Loader from './npy_loader'
 import Arcball from './arcball_quat'
 import VAE from './vae'
@@ -55,16 +56,15 @@ const baseUniforms: UniformDescs = {
   u_ProjectionMatrix: projMat,
 }
 
-const z_points_uniforms: UniformDescs = {
+const traversal_points_uniforms: UniformDescs = {
   ...baseUniforms,
-  u_UseUid: 0,
-  u_IdSelected: -1,
+  u_IdSelected: 4,
   u_PointSize: 8.0,
 }
 
-const traversal_points_uniforms: UniformDescs = {
-  ...baseUniforms,
-  u_PointSize: 8.0,
+const z_points_uniforms: UniformDescs = {
+  ...traversal_points_uniforms,
+  u_UseUid: 0,
 }
 
 const z_points_uniform_setters = G.getUniformSetters(points_program)
@@ -173,6 +173,14 @@ function main(model_name: string) {
     const traversal_points = new Points(gl, curve.verts)
     traversal_points.linkProgram(traversal_points_program)
 
+    const traversalSlider = new Slider(
+      0,
+      traversal_points.numVertices,
+      traversal_points.numVertices / 2,
+      1,
+      'traversalSlider'
+    )
+
     document
       .getElementsByTagName('button')[0]
       .addEventListener('click', () => vae.latentTraversal(curve.verts))
@@ -264,6 +272,7 @@ function main(model_name: string) {
       gl.bindVertexArray(traversal_points.VAO)
       G.setUniforms(traversal_points_uniform_setters, {
         ...traversal_points_uniforms,
+        u_IdSelected: parseInt(traversalSlider.value),
         u_ViewMatrix: viewMat,
       })
       gl.drawArrays(gl.POINTS, 0, traversal_points.numVertices)

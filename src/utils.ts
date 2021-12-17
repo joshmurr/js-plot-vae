@@ -128,3 +128,7 @@ export function mouseRay(
   // because socket.io struggles with F32 arrays.
   return [intersect[0], intersect[1], intersect[2]]
 }
+
+export function clamp(val: number, lb: number, ub: number) {
+  return Math.min(Math.max(val, lb), ub)
+}
