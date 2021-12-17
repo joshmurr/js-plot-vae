@@ -1,4 +1,34 @@
-export const basicVert = `#version 300 es
+export const basicPointVert = `#version 300 es
+precision mediump float;
+
+in vec3 i_Position;
+
+uniform mat4 u_ProjectionMatrix;
+uniform mat4 u_ViewMatrix;
+uniform mat4 u_ModelMatrix;
+uniform float u_PointSize;
+
+void main(){
+    gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * vec4(i_Position, 1.0);
+    gl_PointSize = (gl_Position.z * -1.0) + u_PointSize;
+}`
+
+export const basicPointFrag = `#version 300 es
+precision mediump float;
+
+uniform float u_PointSize;
+
+out vec4 OUTCOLOUR;
+
+void main(){
+    float distance = length(2.0 * gl_PointCoord - 1.0);
+    if (distance > u_PointSize * 0.1) {
+        discard;
+    }
+    OUTCOLOUR = vec4(vec3(0.5), 1.0);
+}`
+
+export const basicLineVert = `#version 300 es
 precision mediump float;
 
 in vec3 i_Position;
@@ -11,7 +41,7 @@ void main(){
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * vec4(i_Position, 1.0);
 }`
 
-export const basicFrag = `#version 300 es
+export const basicLineFrag = `#version 300 es
 precision mediump float;
 
 out vec4 OUTCOLOUR;
