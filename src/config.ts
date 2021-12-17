@@ -13,7 +13,7 @@ interface Config {
 
 export const config: AllConfigs = {
   mnist: {
-    path: './assets/vae_decoder2/model.json',
+    path: './assets/vae_decoder_reparam/model.json',
     z: './assets/model_data/mnist/all_z_mnist.npy',
     //log_var: './assets/model_data/mnist/log_var.npy',
     labels: './assets/model_data/mnist/all_train_labels_mnist.npy',
