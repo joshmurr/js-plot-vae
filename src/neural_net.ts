@@ -1,15 +1,6 @@
 import * as tf from '@tensorflow/tfjs'
 import Model from './model'
-
-interface Config {
-  path: string
-  mean?: string
-  log_var?: string
-  labels?: string
-  width?: number
-  height?: number
-  input_shape: number[]
-}
+import { Config } from './types'
 
 export default class NN extends Model {
   constructor(config: Config) {

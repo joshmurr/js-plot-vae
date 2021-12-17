@@ -1,15 +1,6 @@
 import * as tf from '@tensorflow/tfjs'
 import Model from './model'
-
-interface Config {
-  path: string
-  z?: string
-  labels?: string
-  class_labels?: Array<number | string>
-  width?: number
-  height?: number
-  input_shape: number[]
-}
+import { Config } from './types'
 
 export default class VAE extends Model {
   private canvas: HTMLCanvasElement
