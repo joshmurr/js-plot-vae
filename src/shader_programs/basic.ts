@@ -7,10 +7,15 @@ uniform mat4 u_ProjectionMatrix;
 uniform mat4 u_ViewMatrix;
 uniform mat4 u_ModelMatrix;
 uniform float u_PointSize;
+uniform int u_IdSelected;
 
 void main(){
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * vec4(i_Position, 1.0);
-    gl_PointSize = (gl_Position.z * -1.0) + u_PointSize;
+    if(u_IdSelected == gl_VertexID) {
+        gl_PointSize = (gl_Position.z * -1.0) + u_PointSize * 2.0;
+    } else{
+        gl_PointSize = (gl_Position.z * -1.0) + u_PointSize;
+    }
 }`
 
 export const basicPointFrag = `#version 300 es

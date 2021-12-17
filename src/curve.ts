@@ -1,6 +1,9 @@
 import Geometry from './geometry'
+import { clamp } from './utils'
 
 export default class Curve extends Geometry {
+  private _t_step = 0.01
+
   constructor(gl: WebGL2RenderingContext, _points: Array<number[]> | string) {
     super(gl)
     if (typeof _points === 'string') {
@@ -73,7 +76,7 @@ export default class Curve extends Geometry {
   private computeNVertexCurve3D(points: Array<number[]>) {
     const curveVerts = []
 
-    for (let t = 0; t <= 1; t += 0.01) {
+    for (let t = 0; t <= 1; t += this._t_step) {
       let curveX = 0
       let curveY = 0
       let curveZ = 0
@@ -103,5 +106,9 @@ export default class Curve extends Geometry {
       verts.push(x, y, z)
     }
     return verts
+  }
+
+  public set t(val: number) {
+    this._t_step = clamp(val, 0, 1)
   }
 }
