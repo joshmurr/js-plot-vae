@@ -79,7 +79,7 @@ gl.useProgram(traversal_points_program)
 G.setUniforms(traversal_points_uniform_setters, traversal_points_uniforms)
 
 // -- PICKING ---
-const pickingTex = G.createTexture(canvas.width, canvas.height)
+const pickingTex = G.createTexture(canvas.width, canvas.height, 'RGB')
 
 const depthBuffer = gl.createRenderbuffer()
 gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer)
