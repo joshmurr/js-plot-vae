@@ -1,7 +1,7 @@
 import { vec3, mat4 } from 'gl-matrix'
 
 type UniformDescs = {
-  [key: string]: number | number[] | mat4 | vec3
+  [key: string]: number | number[] | mat4 | vec3 | WebGLTexture
 }
 
 interface TypeInfo {
@@ -9,16 +9,24 @@ interface TypeInfo {
   setterFn?: any
 }
 
-interface UniformSetter extends TypeInfo {
-  location: WebGLUniformLocation
+interface Setter extends TypeInfo {
+  location: WebGLUniformLocation | number
   setter: any
 }
 
-type UniformSetters = {
-  [key: string]: UniformSetter
+type Setters = {
+  [key: string]: Setter
 }
 
 type TypeMap = { [key: number]: TypeInfo }
+type TextureTypeMap = {
+  [key: string]: (
+    gl: WebGL2RenderingContext,
+    w: number,
+    h: number,
+    data: Uint8Array | Float32Array
+  ) => void
+}
 
 interface Camera {
   pos?: vec3
@@ -33,12 +41,13 @@ export default class GL_Handler {
     width: number,
     height: number,
     premultAlpha = false,
-    targetEl: HTMLElement = document.body
+    targetEl: HTMLElement | null = null
   ) {
     const canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
-    targetEl.prepend(canvas)
+    const target = targetEl || document.body
+    target.prepend(canvas)
     this._gl = canvas.getContext('webgl2', {
       premultipliedAlpha: premultAlpha,
     })
@@ -52,13 +61,22 @@ export default class GL_Handler {
 
   public shaderProgram(
     vsSource: string,
-    fsSource: string
+    fsSource: string,
+    tfVaryings: string[] | null = null
   ): WebGLProgram | null {
     const shaderProgram = this._gl.createProgram()
     const vertexShader = this.loadShader(this._gl.VERTEX_SHADER, vsSource)
     const fragmentShader = this.loadShader(this._gl.FRAGMENT_SHADER, fsSource)
     this._gl.attachShader(shaderProgram, vertexShader)
     this._gl.attachShader(shaderProgram, fragmentShader)
+
+    if (tfVaryings) {
+      this._gl.transformFeedbackVaryings(
+        shaderProgram,
+        tfVaryings,
+        this.gl.INTERLEAVED_ATTRIBS
+      )
+    }
 
     this._gl.linkProgram(shaderProgram)
 
@@ -89,13 +107,13 @@ export default class GL_Handler {
     return shader
   }
 
-  public getUniformSetters(program: WebGLProgram): UniformSetters {
+  public getUniformSetters(program: WebGLProgram): Setters {
     const numUniforms = this._gl.getProgramParameter(
       program,
       this._gl.ACTIVE_UNIFORMS
     )
 
-    const uniformSetters: UniformSetters = {}
+    const setters: Setters = {}
 
     for (let ii = 0; ii < numUniforms; ++ii) {
       const uniformInfo = this._gl.getActiveUniform(program, ii)
@@ -112,17 +130,44 @@ export default class GL_Handler {
 
       const setter = setterFn(this._gl)
 
-      uniformSetters[name] = {
+      setters[name] = {
         location,
         constant,
         setter: setter,
       }
     }
 
-    return uniformSetters
+    return setters
   }
 
-  public setUniforms(setters: UniformSetters, uniforms: UniformDescs): void {
+  public getAttributeSetters(program: WebGLProgram): Setters {
+    const numAttribs = this._gl.getProgramParameter(
+      program,
+      this._gl.ACTIVE_ATTRIBUTES
+    )
+
+    const setters: Setters = {}
+
+    for (let ii = 0; ii < numAttribs; ++ii) {
+      const attribInfo = this._gl.getActiveAttrib(program, ii)
+
+      const name = attribInfo.name
+      const location = this._gl.getAttribLocation(program, attribInfo.name)
+      const { constant, setterFn } = this.typeMap[attribInfo.type]
+
+      const setter = setterFn(this._gl)
+
+      setters[name] = {
+        location,
+        constant,
+        setter: setter,
+      }
+    }
+
+    return setters
+  }
+
+  public setUniforms(setters: Setters, uniforms: UniformDescs): void {
     for (const name in uniforms) {
       const values = uniforms[name]
       const { location, setter } = setters[name]
@@ -133,21 +178,12 @@ export default class GL_Handler {
   public createTexture(
     w: number,
     h: number,
+    type: string,
     data: Uint8Array | Float32Array = null
-  ): WebGLTexture {
+  ) {
     const texture = this._gl.createTexture()
     this._gl.bindTexture(this._gl.TEXTURE_2D, texture)
-    this._gl.texImage2D(
-      this._gl.TEXTURE_2D,
-      0,
-      this._gl.RGBA,
-      w,
-      h,
-      0,
-      this._gl.RGBA,
-      this._gl.UNSIGNED_BYTE,
-      data
-    )
+    this.textureLoader[type](this._gl, w, h, data)
     //this._gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     //this._gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
     this._gl.texParameteri(
@@ -209,6 +245,13 @@ export default class GL_Handler {
       height
     )
   }
+  public createStreamBuffer(data: Float32Array): WebGLBuffer {
+    const buffer = this._gl.createBuffer()
+    this._gl.bindBuffer(this._gl.ARRAY_BUFFER, buffer)
+    this._gl.bufferData(this._gl.ARRAY_BUFFER, data, this._gl.STREAM_DRAW)
+
+    return buffer
+  }
 
   public viewMat(opts?: Camera): mat4 {
     const defaultOpts: Camera = {
@@ -252,6 +295,19 @@ export default class GL_Handler {
     return this._gl.canvas.clientWidth / this._gl.canvas.clientHeight
   }
 
+  private samplerSetter(
+    gl: WebGL2RenderingContext,
+    loc: WebGLUniformLocation,
+    texture: WebGLTexture
+  ) {
+    return () => {
+      const unit = 0
+      gl.uniform1i(loc, unit)
+      gl.activeTexture(gl.TEXTURE0 + unit)
+      gl.bindTexture(gl.TEXTURE_2D, texture)
+    }
+  }
+
   //prettier-ignore
   private typeMap: TypeMap = {
     0x84c0: { constant: 'TEXTURE0'                                   , setterFn: null},
@@ -289,7 +345,7 @@ export default class GL_Handler {
     0x8B5A: { constant: 'FLOAT_MAT2'                                 , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniformMatrix2fv(loc, false, val)},
     0x8B5B: { constant: 'FLOAT_MAT3'                                 , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniformMatrix3fv(loc, false, val)},
     0x8B5C: { constant: 'FLOAT_MAT4'                                 , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniformMatrix4fv(loc, false, val)},
-    0x8B5E: { constant: 'SAMPLER_2D'                                 , setterFn: null},
+    0x8B5E: { constant: 'SAMPLER_2D'                                 , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, texture: WebGLTexture) => this.samplerSetter(gl, loc, texture)},
     0x8B60: { constant: 'SAMPLER_CUBE'                               , setterFn: null},
     0x8B5F: { constant: 'SAMPLER_3D'                                 , setterFn: null},
     0x8B62: { constant: 'SAMPLER_2D_SHADOW'                          , setterFn: null},
@@ -318,5 +374,34 @@ export default class GL_Handler {
     0x8513: { constant: 'TEXTURE_CUBE_MAP'                           , setterFn: null},
     0x806F: { constant: 'TEXTURE_3D'                                 , setterFn: null},
     0x8C1A: { constant: 'TEXTURE_2D_ARRAY'                           , setterFn: null},
+  }
+
+  /* TODO
+  private attrTypeMap: TypeMap = {
+    0x1406: { constant: 'FLOAT'                                      , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number  ) => gl.uniform1f(loc, val)},
+    0x8B50: { constant: 'FLOAT_VEC2'                                 , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniform2fv(loc, val)},
+    0x8B51: { constant: 'FLOAT_VEC3'                                 , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniform3fv(loc, val)},
+    0x8B52: { constant: 'FLOAT_VEC4'                                 , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniform4fv(loc, val)},
+    0x1404: { constant: 'INT'                                        , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number  ) => gl.uniform1i(loc, val) },
+    0x8B53: { constant: 'INT_VEC2'                                   , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniform2iv(loc, val)},
+    0x8B54: { constant: 'INT_VEC3'                                   , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniform3iv(loc, val)},
+    0x8B55: { constant: 'INT_VEC4'                                   , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniform4iv(loc, val)},
+    0x8B56: { constant: 'BOOL'                                       , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number  ) => gl.uniform1i(loc, val) },
+    0x8B57: { constant: 'BOOL_VEC2'                                  , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniform2iv(loc, val)},
+    0x8B58: { constant: 'BOOL_VEC3'                                  , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniform3iv(loc, val)},
+    0x8B59: { constant: 'BOOL_VEC4'                                  , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniform4iv(loc, val)},
+    0x8B5A: { constant: 'FLOAT_MAT2'                                 , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniformMatrix2fv(loc, false, val)},
+    0x8B5B: { constant: 'FLOAT_MAT3'                                 , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniformMatrix3fv(loc, false, val)},
+    0x8B5C: { constant: 'FLOAT_MAT4'                                 , setterFn: (gl: WebGL2RenderingContext) => (loc: WebGLUniformLocation, val: number[]) => gl.uniformMatrix4fv(loc, false, val)},
+    0x8DC6: { constant: 'UNSIGNED_INT_VEC2'                          , setterFn: null},
+    0x8DC7: { constant: 'UNSIGNED_INT_VEC3'                          , setterFn: null},
+    0x8DC8: { constant: 'UNSIGNED_INT_VEC4'                          , setterFn: null},
+  }
+  */
+
+  //prettier-ignore
+  private textureLoader: TextureTypeMap = {
+    RGB:  (gl: WebGL2RenderingContext, w: number, h: number, data: Uint8Array | Float32Array): void => gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB,  w, h, 0, gl.RGB,  gl.UNSIGNED_BYTE, data),
+    RGBA: (gl: WebGL2RenderingContext, w: number, h: number, data: Uint8Array | Float32Array): void => gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, data)
   }
 }
