@@ -7,7 +7,6 @@ export default class Points extends Geometry {
   }
 
   public updateVerts(_program: WebGLProgram, _verts: number[]) {
-    //this.gl.bindVertexArray(this._VAOs[0])
     this._verts = _verts
     this.normalizeVerts()
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this._buffers[0])
