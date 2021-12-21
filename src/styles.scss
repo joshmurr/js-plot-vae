@@ -1,16 +1,34 @@
 * {
   font-family: monospace;
 }
+
+body {
+  max-width: 80vw;
+}
+
 #container {
-  display: flex;
+  min-width: 1350px;
+  max-width: 1450px;
+  display: grid;
   flex-direction: row;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 1rem 1rem;
+  grid-template-areas:
+    'canvas info'
+    'latent latent';
+
+  #canvas_wrapper {
+    grid-area: canvas;
+  }
 
   #info {
+    grid-area: info;
+    min-width: 30vw;
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-auto-rows: auto;
-    gap: 0px 0px;
-    grid-template-areas: '. .';
+    gap: 1rem 1rem;
     justify-items: center;
     align-items: center;
 
@@ -26,25 +44,63 @@
       width: 100%;
     }
 
+    select,
+    input[type='submit'] {
+      width: 100%;
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
     #model_output {
       width: 128px;
       height: 128px;
     }
     #pallette {
       width: 200px;
-      list-style: none;
-      display: inline-block;
-      margin: 0;
-      padding: 0;
+    }
+  }
+
+  #latent_images {
+    grid-area: latent;
+    canvas {
+      margin: 0.2rem 0;
     }
   }
 }
+
+.btn {
+  background-color: #aaa;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+
+.btn {
+  transition-duration: 0.1s;
+  align-self: end;
+}
+
+.btn:hover {
+  background-color: #00f;
+  color: white;
+}
+
 .border {
   border: 2px solid red;
+  transform: scale(1.2);
 }
 
 .item {
   width: 100%;
+  height: 100%;
   display: grid;
   grid-template-columns: 1fr;
   grid-auto-rows: auto;

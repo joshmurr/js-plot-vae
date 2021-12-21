@@ -10,9 +10,7 @@ export default class Slider {
     this._slider.step = String(step)
     this._slider.classList.add('latent-slider')
     this._slider.id = id
-    document
-      .getElementsByClassName('slide-container')[0]
-      .appendChild(this._slider)
+    document.getElementsByClassName('slide-container')[0].prepend(this._slider)
   }
 
   public set min(val: number) {

@@ -33,23 +33,25 @@
             <option value="mnist">MNIST</option>
             <option value="fashion_mnist">Fashion MNIST</option>
           </select>
-          <input type="submit" value="Submit" />
+          <input type="submit" class="btn" value="Submit" />
         </form>
 
         <div class="item generate-curve">
           <h3>Shift-Click to Select Points</h3>
           <ul id="selected_points"></ul>
-          <button type="button" id="btn_gen_curve">Generate Curve</button>
+          <button type="button" class="btn" id="btn_gen_curve">
+            Generate Curve
+          </button>
         </div>
 
         <div class="item slide-container">
-          <button type="button" id="btn_gen_traversal">
+          <button type="button" class="btn" id="btn_gen_traversal">
             Generate Latent Traversal
           </button>
           <p id="output_traversal"></p>
         </div>
       </div>
+      <div id="latent_images"></div>
     </div>
-    <div id="latent_images"></div>
   </body>
 </html>
