@@ -1,4 +1,5 @@
 import { vec3, mat4 } from 'gl-matrix'
+import fitCurve from 'fit-curve'
 
 import GL_Handler from './gl_handler'
 import {
@@ -52,7 +53,7 @@ const modelMat = mat4.create()
 
 let id = -1
 let selected_z: Float32Array
-let all_selected_zs: Array<Float32Array> = []
+let all_selected_zs: Array<number[]> = []
 
 const baseUniforms: UniformDescs = {
   u_ModelMatrix: modelMat,
@@ -124,7 +125,7 @@ canvas.addEventListener('mousemove', (e) => {
 canvas.addEventListener('mousedown', (e) => {
   mousedown = true
   if (e.shiftKey) {
-    all_selected_zs.push(selected_z)
+    all_selected_zs.push(Array.from(selected_z))
     addPointToUI(selected_z)
   }
   arcball.startRotation(mouseX, mouseY)
@@ -184,7 +185,6 @@ function main(model_name: string) {
   )
 
   Promise.all(data_promises).then(([labels, z_vals]) => {
-    //const curve = new Curve(gl, 'circle')
     const curve = new Curve(gl, generateCurve(5), 0.01)
     curve.linkProgram(curve_program)
 
@@ -216,15 +216,13 @@ function main(model_name: string) {
       .addEventListener('click', () => vae.latentTraversal(curve.verts))
 
     document.getElementById('btn_gen_curve').addEventListener('click', () => {
-      curve.generateCurveFromVerts(curve_program, all_selected_zs)
+      const controlPoints = fitCurve(all_selected_zs, 10)
+      curve.generateCurveFromControlPoints(curve_program, controlPoints)
       all_selected_zs = []
       traversal_points.updateVerts(traversal_points_program, curve.verts)
       document.getElementById('selected_points').innerHTML = ''
     })
 
-    //const slice = 100
-    //z_vals.data = z_vals.data.slice(0, slice * 3)
-    //labels.data = labels.data.slice(0, slice)
     const z_points = new LatentPoints(gl, z_vals, labels)
     z_points.normalizeVerts()
     z_points.linkProgram(points_program)
