@@ -5,43 +5,29 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>JS-Plot-VAE</title>
-    <style>
-      * {
-        font-family: monospace;
-      }
-      #container {
-        display: flex;
-        flex-direction: row;
-      }
-      canvas {
-        display: inline-block;
-      }
-      .border {
-        border: 2px solid red;
-      }
-      #model_output {
-        width: 128px;
-        height: 128px;
-      }
-      #pallette {
-        width: 200px;
-        list-style: none;
-        display: inline-block;
-      }
-    </style>
   </head>
   <body>
     <div id="container">
-      <div id="canvas"></div>
+      <div id="canvas_wrapper"></div>
 
       <div id="info">
-        <p id="output_id"></p>
-        <p id="output_z"></p>
-        <p id="output_traversal"></p>
-        <canvas id="model_output"></canvas>
-        <ul id="pallette"></ul>
+        <div class="item model-output-wrapper">
+          <h3>Model Output</h3>
+          <canvas id="model_output"></canvas>
+        </div>
 
-        <form>
+        <div class="item output_text">
+          <h3>Latent Z</h3>
+          <p id="output_id"></p>
+          <p id="output_z"></p>
+        </div>
+
+        <div class="item pallette_wrapper">
+          <h3>Class Labels</h3>
+          <ul id="pallette"></ul>
+        </div>
+
+        <form class="item">
           <label for="models">Choose a model:</label>
           <select name="models" id="models">
             <option value="mnist">MNIST</option>
@@ -49,12 +35,19 @@
           </select>
           <input type="submit" value="Submit" />
         </form>
-        <button type="button" id="btn_gen_curve">Generate Curve</button>
-        <button type="button" id="btn_gen_traversal">
-          Generate Latent Traversal
-        </button>
-        <div class="slide-container"></div>
-        <ul id="selected_points"></ul>
+
+        <div class="item generate-curve">
+          <h3>Shift-Click to Select Points</h3>
+          <ul id="selected_points"></ul>
+          <button type="button" id="btn_gen_curve">Generate Curve</button>
+        </div>
+
+        <div class="item slide-container">
+          <button type="button" id="btn_gen_traversal">
+            Generate Latent Traversal
+          </button>
+          <p id="output_traversal"></p>
+        </div>
       </div>
     </div>
     <div id="latent_images"></div>

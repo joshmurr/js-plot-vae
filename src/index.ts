@@ -19,6 +19,8 @@ import Arcball from './arcball_quat'
 import VAE from './vae'
 import { config } from './config'
 
+import './styles.scss'
+
 type UniformDescs = {
   [key: string]: number | number[] | mat4 | vec3
 }
@@ -48,7 +50,12 @@ document.getElementsByTagName('form')[0].onsubmit = (e) => {
 
 const n = new NP_Loader()
 const G = new GL_Handler()
-const canvas = G.canvas(800, 800, true, document.getElementById('canvas'))
+const canvas = G.canvas(
+  800,
+  800,
+  true,
+  document.getElementById('canvas_wrapper')
+)
 const gl = G.gl
 
 const points_program = G.shaderProgram(latentVert, latentFrag)
