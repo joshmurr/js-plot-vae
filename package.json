@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@tensorflow/tfjs": "^3.11.0",
+    "fit-curve": "^0.2.0",
     "gl-matrix": "^3.4.3",
     "npyjs": "^0.2.1"
   }
