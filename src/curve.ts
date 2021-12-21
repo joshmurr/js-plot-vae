@@ -27,7 +27,21 @@ export default class Curve extends Geometry {
     this._indexedGeometry = true
   }
 
-  linkProgram(_program: WebGLProgram) {
+  public updateVerts(_program: WebGLProgram, _verts: number[]) {
+    //this.gl.bindVertexArray(this._VAOs[0])
+    this._verts = _verts
+    this.normalizeVerts()
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this._buffers[0])
+    this.gl.bufferData(
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(this._verts),
+      this.gl.STATIC_DRAW
+    )
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null)
+    this._indices = this.calcIndices()
+  }
+
+  public linkProgram(_program: WebGLProgram) {
     /*
      * Finds all the relevant uniforms and attributes in the specified
      * program and links.
@@ -68,6 +82,14 @@ export default class Curve extends Geometry {
     VAO_desc.forEach((VAO) => this.setupVAO(VAO.buffers, VAO.vao))
   }
 
+  public generateCurveFromVerts(
+    _program: WebGLProgram,
+    _verts: Array<number[] | Float32Array>
+  ) {
+    const curve = this.computeNVertexCurve3D(_verts)
+    this.updateVerts(_program, curve)
+  }
+
   private computeBinomial(n: number, k: number) {
     let value = 1
     for (let i = 1; i <= k; i++) {
@@ -78,7 +100,7 @@ export default class Curve extends Geometry {
     return value
   }
 
-  private computeNVertexCurve3D(points: Array<number[]>) {
+  private computeNVertexCurve3D(points: Array<number[] | Float32Array>) {
     const curveVerts = []
 
     for (let t = 0; t <= 1; t += this._t_step) {
