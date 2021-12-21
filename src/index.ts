@@ -28,8 +28,17 @@ const getUserSelection = () => {
   return select.value
 }
 
+const replaceElement = (id: string) => {
+  const old_el = document.getElementById(id)
+  const new_element = old_el.cloneNode(true)
+  old_el.parentNode.replaceChild(new_element, old_el)
+}
+
 document.getElementsByTagName('form')[0].onsubmit = (e) => {
   e.preventDefault()
+
+  replaceElement('btn_gen_curve')
+  replaceElement('btn_gen_traversal')
 
   const model_name = getUserSelection()
   main(model_name)
@@ -216,7 +225,9 @@ function main(model_name: string) {
       .addEventListener('click', () => vae.latentTraversal(curve.verts))
 
     document.getElementById('btn_gen_curve').addEventListener('click', () => {
-      const controlPoints = fitCurve(all_selected_zs, 10)
+      console.info('Generating curve')
+      const error = 10
+      const controlPoints = fitCurve(all_selected_zs, error)
       curve.generateCurveFromControlPoints(curve_program, controlPoints)
       all_selected_zs = []
       traversal_points.updateVerts(traversal_points_program, curve.verts)
