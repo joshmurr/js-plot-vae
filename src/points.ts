@@ -5,7 +5,21 @@ export default class Points extends Geometry {
     super(gl)
     this._verts = _points
   }
-  linkProgram(_program: WebGLProgram) {
+
+  public updateVerts(_program: WebGLProgram, _verts: number[]) {
+    //this.gl.bindVertexArray(this._VAOs[0])
+    this._verts = _verts
+    this.normalizeVerts()
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this._buffers[0])
+    this.gl.bufferData(
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(this._verts),
+      this.gl.STATIC_DRAW
+    )
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null)
+  }
+
+  public linkProgram(_program: WebGLProgram) {
     /*
      * Finds all the relevant uniforms and attributes in the specified
      * program and links.

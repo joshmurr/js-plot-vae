@@ -50,6 +50,10 @@ let viewMat = G.viewMat({ pos: vec3.fromValues(...camPos) })
 const projMat = G.defaultProjMat()
 const modelMat = mat4.create()
 
+let id = -1
+let selected_z: Float32Array
+let all_selected_zs: Array<Float32Array> = []
+
 const baseUniforms: UniformDescs = {
   u_ModelMatrix: modelMat,
   u_ViewMatrix: viewMat,
@@ -94,6 +98,12 @@ gl.framebufferRenderbuffer(
 )
 // --------------
 
+const addPointToUI = (z: Float32Array) => {
+  const li = document.createElement('li')
+  li.innerText = arrayToXYZ(z)
+  document.getElementById('selected_points').appendChild(li)
+}
+
 const arcball = new Arcball(canvas.width, canvas.height)
 
 let mouseX = -1
@@ -111,8 +121,12 @@ canvas.addEventListener('mousemove', (e) => {
   }
 })
 
-canvas.addEventListener('mousedown', () => {
+canvas.addEventListener('mousedown', (e) => {
   mousedown = true
+  if (e.shiftKey) {
+    all_selected_zs.push(selected_z)
+    addPointToUI(selected_z)
+  }
   arcball.startRotation(mouseX, mouseY)
 })
 
@@ -137,7 +151,7 @@ const arrayToXYZ = (a: Float32Array) =>
 
 const populateOutput = (id: string, mean: Float32Array) => {
   const el = document.getElementById(id)
-  el.innerText = `Mean\t\t${arrayToXYZ(mean)}`
+  el.innerText = `z\t\t${arrayToXYZ(mean)}`
 }
 
 const generateCurve = (nPoints: number) => {
@@ -198,8 +212,15 @@ function main(model_name: string) {
     })
 
     document
-      .getElementsByTagName('button')[0]
+      .getElementById('btn_gen_traversal')
       .addEventListener('click', () => vae.latentTraversal(curve.verts))
+
+    document.getElementById('btn_gen_curve').addEventListener('click', () => {
+      curve.generateCurveFromVerts(curve_program, all_selected_zs)
+      all_selected_zs = []
+      traversal_points.updateVerts(traversal_points_program, curve.verts)
+      document.getElementById('selected_points').innerHTML = ''
+    })
 
     //const slice = 100
     //z_vals.data = z_vals.data.slice(0, slice * 3)
@@ -251,14 +272,14 @@ function main(model_name: string) {
         1
       const data = new Uint8Array(4)
       gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data)
-      let id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
+      id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
       if (id > 0) {
         const idx = (id - 1) * 3
-        const z = z_vals.data.slice(idx, idx + 3) as Float32Array
-        populateOutput('output_z', z)
+        selected_z = z_vals.data.slice(idx, idx + 3) as Float32Array
+        populateOutput('output_z', selected_z)
         document.getElementById('output_id').innerText = `ID: ${id}`
 
-        vae.run(z)
+        vae.run(selected_z)
       }
       //----------------------
 
