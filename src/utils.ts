@@ -1,10 +1,14 @@
 import { vec3, vec4, mat4 } from 'gl-matrix'
 
-export function generateColourPalette(num_colours: number): Array<number[]> {
+export function generateColourPalette(
+  num_colours: number,
+  selected = -1
+): Array<number[]> {
   const colours: Array<number[]> = []
   for (let i = 0; i < num_colours; i++) {
     const s = i / num_colours
-    colours.push([...HSVtoRGB(s, 1.0, 1.0)])
+    const saturation = selected < 0 ? 1 : i === selected ? 1 : 0.2
+    colours.push([...HSVtoRGB(s, saturation, 1)])
   }
   return colours
 }
