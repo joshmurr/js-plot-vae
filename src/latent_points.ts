@@ -22,6 +22,7 @@ export default class LatentPoints extends Geometry {
   private _labels: DTypeDesc
   private _unique_labels: Set<number>
   private _pallette: Array<number[]>
+  private _selected_class_label: number
 
   constructor(
     gl: WebGL2RenderingContext,
@@ -34,13 +35,7 @@ export default class LatentPoints extends Geometry {
     this._labels = _labels
     this._unique_labels = new Set(_labels.data)
 
-    /* Generate Point colour from label */
-    this._num_color_components = 3
-    this._pallette = generateColourPalette(this._unique_labels.size)
-    this._colors = []
-    for (let i = 0; i < this._labels.data.length; i++) {
-      this._colors.push(...this._pallette[this._labels.data[i]])
-    }
+    this.initColourPalette()
 
     /* Generate UID colour */
     this._num_uid_components = 3
@@ -49,7 +44,35 @@ export default class LatentPoints extends Geometry {
       this._num_uid_components
     )
   }
-  linkProgram(_program: WebGLProgram) {
+
+  private initColourPalette(selected_id = -1) {
+    /* Generate Point colour from label */
+    this._num_color_components = 3
+    this._pallette = generateColourPalette(
+      this._unique_labels.size,
+      selected_id
+    )
+    this._colors = []
+    for (let i = 0; i < this._labels.data.length; i++) {
+      this._colors.push(...this._pallette[this._labels.data[i]])
+    }
+  }
+
+  public selectClassLabel(selected: number) {
+    this._selected_class_label =
+      this._selected_class_label === selected ? -1 : selected
+
+    this.initColourPalette(this._selected_class_label)
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this._buffers[1])
+    this.gl.bufferData(
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(this._colors),
+      this.gl.STATIC_DRAW
+    )
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null)
+  }
+
+  public linkProgram(_program: WebGLProgram) {
     /*
      * Finds all the relevant uniforms and attributes in the specified
      * program and links.
