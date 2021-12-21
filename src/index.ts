@@ -242,7 +242,7 @@ function main(model_name: string) {
     })
 
     const z_points = new LatentPoints(gl, z_vals, labels)
-    z_points.normalizeVerts()
+    z_points.normalize()
     z_points.linkProgram(points_program)
 
     const pallette_el = document.getElementById('pallette')

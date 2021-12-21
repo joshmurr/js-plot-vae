@@ -173,7 +173,7 @@ export default abstract class Geometry {
 
   public normalizeEachVert() {
     for (let i = 0; i < this._verts.length; i += 3) {
-      const norm = this.normalize(
+      const norm = this.normalizeFromArray(
         this._verts[i],
         this._verts[i + 1],
         this._verts[i + 2]
@@ -184,18 +184,12 @@ export default abstract class Geometry {
     }
   }
 
-  public normalizeVerts() {
+  public normalizeVerts(_verts: number[]) {
     let min = Number.POSITIVE_INFINITY
     let max = Number.NEGATIVE_INFINITY
     const vectors: Array<vec3> = []
-    for (let i = 0; i < this._verts.length; i += 3) {
-      const v = vec3.fromValues(
-        this._verts[i],
-        /* GEOMETRY CLASS */
-
-        this._verts[i + 1],
-        this._verts[i + 2]
-      )
+    for (let i = 0; i < _verts.length; i += 3) {
+      const v = vec3.fromValues(_verts[i], _verts[i + 1], _verts[i + 2])
       vectors.push(v)
       const l = vec3.len(v)
 
@@ -203,17 +197,24 @@ export default abstract class Geometry {
       max = Math.max(l, max)
     }
     const scale = 1 / max
+    const newVerts = new Array(_verts.length)
     for (let i = 0; i < vectors.length; i++) {
       const v = vectors[i]
       vec3.scale(v, v, scale)
       const j = i * 3
-      this._verts[j] = v[0]
-      this._verts[j + 1] = v[1]
-      this._verts[j + 2] = v[2]
+      newVerts[j] = v[0]
+      newVerts[j + 1] = v[1]
+      newVerts[j + 2] = v[2]
     }
+
+    return newVerts
   }
 
-  private normalize(a: number, b: number, c: number) {
+  public normalize() {
+    this._verts = this.normalizeVerts(this._verts)
+  }
+
+  private normalizeFromArray(a: number, b: number, c: number) {
     const len = Math.sqrt(a * a + b * b + c * c)
     return [a / len, b / len, c / len]
   }
