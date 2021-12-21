@@ -21,7 +21,7 @@ export default class Curve extends Geometry {
       }
     } else {
       this._verts = this.computeNVertexCurve3D(_points)
-      this.normalizeVerts()
+      this._verts = this.normalizeVerts(this._verts)
     }
     this._indices = this.calcIndices()
     this._indexedGeometry = true
@@ -70,11 +70,10 @@ export default class Curve extends Geometry {
 
   public updateVerts(_program: WebGLProgram, _verts: number[]) {
     this._verts = _verts
-    this.normalizeVerts()
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this._buffers[0])
     this.gl.bufferData(
       this.gl.ARRAY_BUFFER,
-      new Float32Array(this._verts),
+      new Float32Array(this.normalizeVerts(_verts)),
       this.gl.STATIC_DRAW
     )
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null)
