@@ -250,9 +250,9 @@ function main(model_name: string) {
     z_points.pallette.map((rgba, i) => {
       const li = document.createElement('li')
       li.innerText = `${config[model_name].class_labels[i]}`
-      li.addEventListener('click', () => z_points.selectClassLabel(i))
       const [r, g, b] = rgba
       li.style.background = `rgb(${r * 255},${g * 255},${b * 255})`
+      li.addEventListener('click', () => z_points.selectClassLabel(i))
       pallette_el.appendChild(li)
     })
 
