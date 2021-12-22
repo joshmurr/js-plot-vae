@@ -1,10 +1,8 @@
 # Interacting with the Latent Space of a VAE
 
----
-
 # [Available Online Here](https://interactive-latent-vae.netlify.app/)
 
----
+![Output](./screenshots/output_221221.png)
 
 Visualising the latent space of a latent variable model (such as a VAE) is often part of the process in learning about how these model work and ultimately how we can then use the model to generate new data. Here is the 3D latent space of a simple VAE visualised using MatplotLib:
 
@@ -13,8 +11,6 @@ Visualising the latent space of a latent variable model (such as a VAE) is often
 I definitely fall into the camp of pretty-visuals-help-me-a-lot and I'm sure plenty of others do as well, and so whenever I am able produce graphs/plots/visualisations I will. I often teach students at UAL about machine learning (mostly on Creative Computing) and visualistions help there a lot too. But one of the trickiest parts to demonstrate is how data moves through a model and how the model itself is largely just reshaping data (add/removing dimensions) through a series of tiny calculations (that's how I see it any way). So it's one thing to visualise the latent space of a model, but still connecting the dots between model input and output can still be confusing.
 
 SO that led me to make this. It's basically an interactive scatterplot of the latent space of a VAE. There are other things like this [out there](https://projector.tensorflow.org/), arguably better, but I wanted to focus on image generation. The starting point really was that I wanted to literally visualise a traversal through latent space - and you can do that with this thing*.
-
-![Output](./screenshots/output_221221.png)
 
 ## Features
 
