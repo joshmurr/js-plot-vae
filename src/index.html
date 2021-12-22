@@ -11,44 +11,58 @@
       <div id="canvas_wrapper"></div>
 
       <div id="info">
-        <div class="item model-output-wrapper">
-          <h3>Model Output</h3>
-          <canvas id="model_output"></canvas>
+        <div class="row">
+          <div class="item output_text">
+            <h3>Model Input</h3>
+          </div>
+          <div class="item output_text">
+            <p id="output_id"></p>
+            <p id="output_z"></p>
+          </div>
         </div>
 
-        <div class="item output_text">
-          <h3>Latent Z</h3>
-          <p id="output_id"></p>
-          <p id="output_z"></p>
+        <div class="row">
+          <div class="item model-output-wrapper">
+            <h3>Model Output</h3>
+            <canvas id="model_output"></canvas>
+          </div>
+
+          <div class="item pallette_wrapper">
+            <h3>Class Labels</h3>
+            <ul id="pallette"></ul>
+          </div>
         </div>
 
-        <div class="item pallette_wrapper">
-          <h3>Class Labels</h3>
-          <ul id="pallette"></ul>
+        <div class="row">
+          <form class="item">
+            <label for="models">Choose a model:</label>
+            <select name="models" id="models">
+              <option value="mnist">MNIST</option>
+              <option value="fashion_mnist">Fashion MNIST</option>
+            </select>
+            <input type="submit" class="btn" value="Submit" />
+          </form>
         </div>
 
-        <form class="item">
-          <label for="models">Choose a model:</label>
-          <select name="models" id="models">
-            <option value="mnist">MNIST</option>
-            <option value="fashion_mnist">Fashion MNIST</option>
-          </select>
-          <input type="submit" class="btn" value="Submit" />
-        </form>
-
-        <div class="item generate-curve">
-          <h3>Shift-Click to Select Points</h3>
-          <ul id="selected_points"></ul>
-          <button type="button" class="btn" id="btn_gen_curve">
-            Generate Curve
-          </button>
+        <div class="row">
+          <div class="item generate-curve">
+            <h3>Shift-Click to Select Points</h3>
+          </div>
+          <div class="item generate-curve">
+            <ul id="selected_points"></ul>
+            <button type="button" class="btn" id="btn_gen_curve">
+              Generate Curve
+            </button>
+          </div>
         </div>
 
-        <div class="item slide-container">
-          <button type="button" class="btn" id="btn_gen_traversal">
-            Generate Latent Traversal
-          </button>
-          <p id="output_traversal"></p>
+        <div class="row">
+          <div class="item slide-container">
+            <button type="button" class="btn" id="btn_gen_traversal">
+              Generate Latent Traversal
+            </button>
+            <p id="output_traversal"></p>
+          </div>
         </div>
       </div>
       <div id="latent_images"></div>
