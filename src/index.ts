@@ -41,6 +41,7 @@ document.getElementsByTagName('form')[0].onsubmit = (e) => {
 
   replaceElement('btn_gen_curve')
   replaceElement('btn_gen_traversal')
+  replaceElement('pallette')
 
   const model_name = getUserSelection()
   main(model_name)
