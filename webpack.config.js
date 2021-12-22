@@ -3,6 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const ESLintPlugin = require('eslint-webpack-plugin')
+const CopyWebpackPlugin = require('copy-webpack-plugin')
 
 module.exports = {
   mode: 'development',
@@ -69,14 +70,20 @@ module.exports = {
     }),
     new ForkTsCheckerWebpackPlugin(),
     new MiniCssExtractPlugin({
-      // Options similar to the same options in webpackOptions.output
-      // both options are optional
       filename: '[name].[contenthash].css',
       chunkFilename: '[id].css',
     }),
     new ESLintPlugin({
       extensions: ['.tsx', '.ts', '.js'],
       exclude: 'node_modules',
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: 'src/assets',
+          to: 'assets',
+        },
+      ],
     }),
   ],
 }
