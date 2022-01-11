@@ -10,7 +10,6 @@ export default class VAE extends Model {
     super(config)
 
     if (config.aux) this.aux = config.aux
-
     this.canvas = canvas
     this.canvas.width = config.width
     this.canvas.height = config.height

@@ -356,7 +356,7 @@ function main(model_name: string) {
   })
 }
 
-main('cifar10')
+main(getUserSelection())
 
 /* Select particular class code
  * ----------------------------
@@ -366,7 +366,6 @@ const label_ids: number[] = []
 labels.data.forEach((l, i) => {
 if (l == select) label_ids.push(i)
 })
-
 labels.data = new Uint8Array(label_ids.length).fill(0)
 
 n.load(all_z_mean).then((mean_vals) => {
