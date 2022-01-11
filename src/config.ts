@@ -57,3 +57,4 @@ export const config: AllConfigs = {
     path: './assets/cifar10_xyz-to-z/model.json',
     input_shape: [1, 3],
   },
+}
