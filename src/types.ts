@@ -1,5 +1,6 @@
 export interface Config {
   path: string
+  aux?: string
   z?: string
   labels?: string
   class_labels?: Array<number | string>

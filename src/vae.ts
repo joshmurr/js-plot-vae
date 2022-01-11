@@ -4,9 +4,12 @@ import { Config } from './types'
 
 export default class VAE extends Model {
   private canvas: HTMLCanvasElement
+  private aux: string
 
   constructor(config: Config, canvas: HTMLCanvasElement) {
     super(config)
+
+    if (config.aux) this.aux = config.aux
 
     this.canvas = canvas
     this.canvas.width = config.width
@@ -17,22 +20,17 @@ export default class VAE extends Model {
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
   }
 
-  public async run(mean: Float32Array) {
+  public async run(latent: Float32Array) {
     const logits = tf.tidy(() => {
-      //const z = this.reparameterize(mean, logvar).expandDims(0)
-      const z = tf.tensor([mean])
+      const z = tf.tensor([latent])
       const decoded = this.model.predict(z) as tf.Tensor
       return decoded.sigmoid()
     })
     const d = logits.squeeze()
+    d.data().then(console.log)
     tf.browser.toPixels(d as tf.Tensor2D, this.canvas)
 
     return d
-  }
-
-  public dispose() {
-    this.model.dispose()
-    tf.disposeVariables()
   }
 
   private async generateImageTensors(points: number[]) {
@@ -59,5 +57,9 @@ export default class VAE extends Model {
       tf.browser.toPixels(t, canvas)
       output_el.appendChild(canvas)
     })
+  }
+
+  public get auxModel() {
+    return this.aux
   }
 }
