@@ -17,7 +17,6 @@ import Slider from './slider'
 import NP_Loader from './npy_loader'
 import Arcball from './arcball_quat'
 import VAE from './vae'
-import CoordToZ from './coord-to-z'
 import { config } from './config'
 
 import './styles.scss'
@@ -185,7 +184,6 @@ const generateCurve = (nPoints: number) => {
 }
 
 let vae: VAE
-let aux: CoordToZ
 
 const slider = new Slider()
 
@@ -197,10 +195,6 @@ function main(model_name: string) {
   console.log(`Loading Model: ${model_name}`)
   if (vae) vae.dispose()
   vae = new VAE(config[model_name], model_canvas)
-  if (vae.auxModel) {
-    if (aux) aux.dispose()
-    aux = new CoordToZ(config[vae.auxModel])
-  }
   // --------------------------------------------------------
 
   const data_promises = [config[model_name].labels, config[model_name].z].map(
@@ -303,13 +297,7 @@ function main(model_name: string) {
         populateOutput('output_z', selected_z)
         document.getElementById('output_id').innerText = `ID: ${id}`
 
-        if (vae.auxModel) {
-          aux.run(selected_z).then((actual_z) => {
-            vae.run(actual_z as Float32Array)
-          })
-        } else {
-          vae.run(selected_z)
-        }
+        vae.run(selected_z)
       }
       //----------------------
 
@@ -366,6 +354,7 @@ const label_ids: number[] = []
 labels.data.forEach((l, i) => {
 if (l == select) label_ids.push(i)
 })
+
 labels.data = new Uint8Array(label_ids.length).fill(0)
 
 n.load(all_z_mean).then((mean_vals) => {

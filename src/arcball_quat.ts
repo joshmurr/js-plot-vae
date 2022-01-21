@@ -29,7 +29,7 @@ export default class Arcball {
     const { x, y } = this.remapXY(_x, _y)
     this._currentRotationVector = this.project(x, y)
 
-    quat.rotationTo(
+    this._currentQuat = quat.rotationTo(
       this._currentQuat,
       this._startRotationVector,
       this._currentRotationVector

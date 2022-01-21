@@ -18,9 +18,4 @@ export default class Model {
     ) as tf.Tensor
     warm_up.dispose()
   }
-
-  public dispose() {
-    this.model.dispose()
-    tf.disposeVariables()
-  }
 }
